@@ -1,2 +1,5 @@
 # Study_Guadian
-試用
+- LINE Botを作ってみる
+- **開発環境**
+  - Python
+  - 
