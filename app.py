@@ -17,6 +17,7 @@ from services.gsheet import GSheetService
 from services.economy import EconomyService
 from services.stats import SagaStats
 from services.shop import ShopService
+from services.job import JobService
 
 load_dotenv()
 
@@ -329,6 +330,154 @@ def handle_postback(event):
             ),
         )
 
+    # --- 4. ジョブ関連 ---
+    elif action == "job_accept":
+        job_id = data.get("id")
+        success, result = JobService.accept_job(job_id, user_id)
+
+        if success:
+            # 完了報告ボタン付きメッセージ
+            finish_flex = {
+                "type": "bubble",
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "💪 お手伝い開始！",
+                            "weight": "bold",
+                            "size": "lg",
+                        },
+                        {"type": "text", "text": f"タスク: {result}", "margin": "md"},
+                        {
+                            "type": "text",
+                            "text": "終わったら下のボタンを押してね",
+                            "size": "sm",
+                            "color": "#aaaaaa",
+                        },
+                    ],
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "action": {
+                                "type": "postback",
+                                "label": "完了報告",
+                                "data": f"action=job_finish&id={job_id}",
+                            },
+                        }
+                    ],
+                },
+            }
+            line_bot_api.reply_message(
+                event.reply_token,
+                FlexSendMessage(alt_text="受注完了", contents=finish_flex),
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text=f"エラー: {result}")
+            )
+
+    elif action == "job_finish":
+        job_id = data.get("id")
+        success, result = JobService.finish_job(job_id, user_id)
+
+        if success:
+            # 親への承認依頼
+            profile = line_bot_api.get_profile(user_id)
+            approve_flex = {
+                "type": "bubble",
+                "header": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": "#27ACB2",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": "✨ お手伝い完了報告",
+                            "color": "#ffffff",
+                            "weight": "bold",
+                        }
+                    ],
+                },
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": f"{profile.display_name} が完了しました！",
+                        },
+                        {
+                            "type": "text",
+                            "text": f"タスク: {result['title']}",
+                            "weight": "bold",
+                            "margin": "md",
+                        },
+                        {
+                            "type": "text",
+                            "text": f"報酬: {result['reward']} EXP",
+                            "color": "#ff5555",
+                        },
+                    ],
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "action": {
+                                "type": "postback",
+                                "label": "承認する",
+                                "data": f"action=job_approve&id={job_id}",
+                            },
+                        }
+                    ],
+                },
+            }
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    TextSendMessage(
+                        text="お疲れ様！親に報告しました。承認を待ってね。"
+                    ),
+                    FlexSendMessage(alt_text="承認依頼", contents=approve_flex),
+                ],
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text=f"エラー: {result}")
+            )
+
+    elif action == "job_approve":
+        if not EconomyService.is_admin(user_id):
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="権限がありません")
+            )
+            return
+
+        job_id = data.get("id")
+        success, result = JobService.approve_job(job_id)
+
+        if success:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=f"💮 承認しました！\n{result['title']} の報酬 {result['reward']} EXP を付与しました。\n(現在残高: {result['balance']} EXP)"
+                ),
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text=f"エラー: {result}")
+            )
+
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
@@ -447,6 +596,127 @@ def handle_message(event):
         line_bot_api.reply_message(
             event.reply_token,
             FlexSendMessage(alt_text="勉強終了確認", contents=confirm_flex),
+        )
+
+    # --- 4. お手伝い（ジョブ） ---
+    elif msg == "ジョブ" or msg == "お手伝い":
+        # 1. 自分の担当中タスクを表示
+        active_jobs = JobService.get_user_active_jobs(user_id)
+        contents = []
+
+        if active_jobs:
+            contents.append(
+                {
+                    "type": "text",
+                    "text": "🔥 進行中のタスク",
+                    "weight": "bold",
+                    "color": "#ff5555",
+                }
+            )
+            for job in active_jobs:
+                contents.append(
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "margin": "sm",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": job["title"],
+                                "flex": 2,
+                                "gravity": "center",
+                            },
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "flex": 1,
+                                "action": {
+                                    "type": "postback",
+                                    "label": "完了",
+                                    "data": f"action=job_finish&id={job['job_id']}",
+                                },
+                            },
+                        ],
+                    }
+                )
+            contents.append({"type": "separator", "margin": "md"})
+
+        # 2. 募集中のタスクを表示
+        open_jobs = JobService.get_open_jobs()
+        contents.append(
+            {
+                "type": "text",
+                "text": "📋 募集中のタスク",
+                "weight": "bold",
+                "margin": "md",
+            }
+        )
+
+        if not open_jobs:
+            contents.append(
+                {
+                    "type": "text",
+                    "text": "現在募集中のタスクはありません",
+                    "size": "sm",
+                    "color": "#aaaaaa",
+                    "margin": "sm",
+                }
+            )
+        else:
+            for job in open_jobs:
+                contents.append(
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "margin": "sm",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": job["title"],
+                                "flex": 2,
+                                "gravity": "center",
+                            },
+                            {
+                                "type": "text",
+                                "text": f"{job['reward']} EXP",
+                                "flex": 1,
+                                "align": "end",
+                                "gravity": "center",
+                                "color": "#27ACB2",
+                            },
+                            {
+                                "type": "button",
+                                "style": "secondary",
+                                "flex": 1,
+                                "action": {
+                                    "type": "postback",
+                                    "label": "受注",
+                                    "data": f"action=job_accept&id={job['job_id']}",
+                                },
+                            },
+                        ],
+                    }
+                )
+
+        job_flex = {
+            "type": "bubble",
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "🛠 お手伝いボード",
+                        "weight": "bold",
+                        "size": "xl",
+                    }
+                ],
+            },
+            "body": {"type": "box", "layout": "vertical", "contents": contents},
+        }
+        line_bot_api.reply_message(
+            event.reply_token,
+            FlexSendMessage(alt_text="お手伝いリスト", contents=job_flex),
         )
 
     # --- 3. ショップメニュー表示 ---
