@@ -52,7 +52,7 @@ def handle_message(event):
 
     # 自分の情報を取得（権限チェックや残高表示のため）
     user_info = EconomyService.get_user_info(user_id)
-    
+
     # 時刻取得
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
 
@@ -83,11 +83,19 @@ def handle_message(event):
 
             # 統計計算
             stats = SagaStats.calculate(total_minutes)
-            ex_point = total_minutes  # 仮：1分1円
 
-            reply_text = (
-                f"【記録終了】\n⏱ {hours}時間{minutes}分\n💰 獲得: {ex_point} EXP\n\n"
+            # 【★修正】ここで EXP を定義します（1分 = 1 EXP）
+            ex_point = total_minutes
+
+            # DBに保存
+            new_balance = EconomyService.add_exp(
+                user_id, ex_point, related_id="STUDY_REWARD"
             )
+
+            reply_text = f"【記録終了】\n⏱ {hours}時間{minutes}分\n"
+            reply_text += f"💰 獲得: {ex_point} EXP\n"
+            reply_text += f"🏦 残高: {new_balance} EXP\n\n"
+
             if stats:
                 reply_text += f"📊 佐賀県中1シミュレーション\n"
                 reply_text += f"┣ 偏差値: {stats['deviation']}\n"
