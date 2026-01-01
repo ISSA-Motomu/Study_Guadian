@@ -221,14 +221,77 @@ def handle_message(event):
     msg = event.message.text
     user_id = event.source.user_id
 
-    # ユーザー登録等はそのまま
-    EconomyService.register_user(user_id, "User")
+    # ユーザー情報を取得して登録（なければ作成）
+    try:
+        profile = line_bot_api.get_profile(user_id)
+        user_name = profile.display_name
+    except:
+        user_name = "User"
 
-    # ... (勉強開始・終了のロジックはそのまま維持) ...
-    # (ここに以前の勉強開始・終了コードが入っています)
+    EconomyService.register_user(user_id, user_name)
 
-    # ★★★ ショップメニュー表示 ★★★
-    if msg == "ショップ" or msg == "使う":
+    # 現在時刻
+    now = datetime.datetime.now(
+        datetime.timezone(datetime.timedelta(hours=9))
+    )  # 日本時間
+    today = now.strftime("%Y-%m-%d")
+    current_time = now.strftime("%H:%M:%S")
+
+    reply_text = ""
+
+    # --- 1. 勉強開始 ---
+    if msg == "勉強開始":
+        if GSheetService.log_activity(user_id, user_name, today, current_time):
+            reply_text = (
+                f"【記録開始】\n{current_time} スタート！\n今日も頑張ってえらい！"
+            )
+        else:
+            reply_text = (
+                "エラー：記録に失敗しました。スプレッドシートを確認してください。"
+            )
+
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+
+    # --- 2. 勉強終了 ---
+    elif msg == "勉強終了":
+        result = GSheetService.update_end_time(user_id, current_time)
+        if result:
+            # 時間計算
+            start_time_str = result["start_time"]
+            try:
+                start_dt = datetime.datetime.strptime(start_time_str, "%H:%M:%S")
+                end_dt = datetime.datetime.strptime(current_time, "%H:%M:%S")
+
+                # 日付またぎ対応（簡易）
+                if end_dt < start_dt:
+                    end_dt += datetime.timedelta(days=1)
+
+                duration = end_dt - start_dt
+                minutes = int(duration.total_seconds() / 60)
+
+                # 報酬計算 (例: 1分 = 1 EXP)
+                earned_exp = minutes
+                new_balance = EconomyService.add_exp(
+                    user_id, earned_exp, "STUDY_REWARD"
+                )
+
+                hours, mins = divmod(minutes, 60)
+                reply_text = (
+                    f"【記録終了】\nお疲れ様でした！\n"
+                    f"勉強時間: {hours}時間{mins}分\n"
+                    f"獲得EXP: {earned_exp} EXP\n"
+                    f"現在残高: {new_balance} EXP"
+                )
+            except Exception as e:
+                print(f"計算エラー: {e}")
+                reply_text = "時間の計算に失敗しました。"
+        else:
+            reply_text = "「勉強開始」が見つかりません。\n先に「勉強開始」を押してね！"
+
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+
+    # --- 3. ショップメニュー表示 ---
+    elif msg == "ショップ" or msg == "使う":
         # 商品カタログFlex Messageを作成
         items_contents = []
         for key, item in SHOP_ITEMS.items():
