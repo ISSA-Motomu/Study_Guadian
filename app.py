@@ -1,5 +1,6 @@
 import os
 import datetime
+from services.economy import EconomyService
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
@@ -43,6 +44,17 @@ def handle_message(event):
     user_id = event.source.user_id
     profile = line_bot_api.get_profile(user_id)
     user_name = profile.display_name
+
+    # ★ここに追加：ユーザー登録チェック（銀行口座開設）
+    # 毎回チェックするのは非効率に見えますが、
+    # GSpreadのAPI制限にかからない程度なら、確実性を取ってこの位置でOK
+    EconomyService.register_user(user_id, user_name)
+
+    # 自分の情報を取得（権限チェックや残高表示のため）
+    user_info = EconomyService.get_user_info(user_id)
+    
+    # 時刻取得
+    now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
 
     # 時刻取得
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
