@@ -1,7 +1,9 @@
 # Study_Guadian
 - 6人子供の長男として家庭環境の改造を目指す
 - LINE Botを作ってみる
+
 # ディレクトリ構造
+```
 Study-Guardian/
 ├── .env                  # 環境変数
 ├── .gitignore
@@ -17,6 +19,7 @@ Study-Guardian/
 └── utils/                # 便利ツール（日付計算など）
     ├── __init__.py
     └── time_calc.py
+```
 
 # **開発環境**
   - Python
