@@ -168,11 +168,7 @@ class StatusService:
                 ],
             },
             "hero": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [],
-                "height": "1px",
-                "paddingAll": "none"
+                "type": "separator"
             },
             "body": {
                 "type": "box",
