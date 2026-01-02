@@ -4,14 +4,12 @@ import json
 
 class StatusService:
     @staticmethod
-    def create_medal_home_gui(user_data):
-        """勲章メインのホーム画面を生成"""
-        total_minutes = int(user_data.get("total_study_time", 0))
-
+    def get_rank_info(total_minutes):
+        """累計勉強時間からランク情報を取得"""
         # ランク定義
         # E: 0-180, D: 180-600, C: 600-1200, B: 1200-3000, A: 3000-6000, S: 6000+
         if total_minutes >= 6000:
-            rank_data = {
+            return {
                 "name": "Rank S: 伝説の勇者",
                 "color": "#9932CC",
                 "next": None,
@@ -19,7 +17,7 @@ class StatusService:
                 "img": "rank_s.png",
             }
         elif total_minutes >= 3000:
-            rank_data = {
+            return {
                 "name": "Rank A: 黄金の騎士",
                 "color": "#FFD700",
                 "next": 6000,
@@ -27,7 +25,7 @@ class StatusService:
                 "img": "rank_a.png",
             }
         elif total_minutes >= 1200:
-            rank_data = {
+            return {
                 "name": "Rank B: 銀の熟練者",
                 "color": "#C0C0C0",
                 "next": 3000,
@@ -35,7 +33,7 @@ class StatusService:
                 "img": "rank_b.png",
             }
         elif total_minutes >= 600:
-            rank_data = {
+            return {
                 "name": "Rank C: 銅の戦士",
                 "color": "#CD7F32",
                 "next": 1200,
@@ -43,7 +41,7 @@ class StatusService:
                 "img": "rank_c.png",
             }
         elif total_minutes >= 180:
-            rank_data = {
+            return {
                 "name": "Rank D: 鉄の駆け出し",
                 "color": "#708090",
                 "next": 600,
@@ -51,13 +49,20 @@ class StatusService:
                 "img": "rank_d.png",
             }
         else:
-            rank_data = {
+            return {
                 "name": "Rank E: 見習い",
                 "color": "#A9A9A9",
                 "next": 180,
                 "base": 0,
                 "img": "rank_e.png",
             }
+
+    @staticmethod
+    def create_medal_home_gui(user_data, weekly_ranking=[]):
+        """勲章メインのホーム画面を生成"""
+        total_minutes = int(user_data.get("total_study_time", 0))
+
+        rank_data = StatusService.get_rank_info(total_minutes)
 
         import os
 
@@ -94,6 +99,7 @@ class StatusService:
                     "type": "box",
                     "layout": "vertical",
                     "width": "60px",
+                    "alignItems": "center",
                     "contents": [
                         {
                             "type": "box",
@@ -107,7 +113,6 @@ class StatusService:
                             "contents": [
                                 {"type": "text", "text": r["icon"], "size": "xl"}
                             ],
-                            "margin": "auto",
                         },
                         {
                             "type": "text",
@@ -120,6 +125,108 @@ class StatusService:
                     ],
                 }
             )
+
+        # ランキングセクションの構築
+        ranking_contents = []
+        if weekly_ranking:
+            ranking_contents.append(
+                {
+                    "type": "text",
+                    "text": "🏆 WEEKLY RANKING",
+                    "color": "#FFD700",
+                    "size": "xs",
+                    "weight": "bold",
+                    "margin": "lg",
+                }
+            )
+
+            # Top 3
+            for i, r in enumerate(weekly_ranking[:3]):
+                is_me = str(r["user_id"]) == str(user_data["user_id"])
+                color = "#ffffff" if is_me else "#aaaaaa"
+                weight = "bold" if is_me else "regular"
+                rank_icon = "👑" if i == 0 else f"{i + 1}."
+
+                ranking_contents.append(
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "margin": "sm",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": str(rank_icon),
+                                "color": "#FFD700",
+                                "size": "sm",
+                                "flex": 1,
+                                "align": "center",
+                            },
+                            {
+                                "type": "text",
+                                "text": r["display_name"],
+                                "color": color,
+                                "size": "sm",
+                                "flex": 4,
+                                "weight": weight,
+                            },
+                            {
+                                "type": "text",
+                                "text": f"{r['weekly_exp']}",
+                                "color": color,
+                                "size": "sm",
+                                "flex": 2,
+                                "align": "end",
+                            },
+                        ],
+                    }
+                )
+
+            # 自分が3位以下の場合、自分の順位を表示
+            my_rank_data = next(
+                (
+                    r
+                    for r in weekly_ranking
+                    if str(r["user_id"]) == str(user_data["user_id"])
+                ),
+                None,
+            )
+            if my_rank_data and my_rank_data["rank"] > 3:
+                ranking_contents.append(
+                    {"type": "separator", "margin": "sm", "color": "#444444"}
+                )
+                ranking_contents.append(
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "margin": "sm",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": f"{my_rank_data['rank']}.",
+                                "color": "#aaaaaa",
+                                "size": "sm",
+                                "flex": 1,
+                                "align": "center",
+                            },
+                            {
+                                "type": "text",
+                                "text": "You",
+                                "color": "#ffffff",
+                                "size": "sm",
+                                "flex": 4,
+                                "weight": "bold",
+                            },
+                            {
+                                "type": "text",
+                                "text": f"{my_rank_data['weekly_exp']}",
+                                "color": "#ffffff",
+                                "size": "sm",
+                                "flex": 2,
+                                "align": "end",
+                            },
+                        ],
+                    }
+                )
 
         bubble = {
             "type": "bubble",
@@ -167,9 +274,7 @@ class StatusService:
                     },
                 ],
             },
-            "hero": {
-                "type": "separator"
-            },
+            "hero": {"type": "separator"},
             "body": {
                 "type": "box",
                 "layout": "vertical",
@@ -213,6 +318,13 @@ class StatusService:
                         "contents": ribbon_contents,
                         "margin": "lg",
                         "justifyContent": "center",
+                    },
+                    # ランキング表示エリア
+                    {
+                        "type": "box",
+                        "layout": "vertical",
+                        "contents": ranking_contents,
+                        "margin": "md",
                     },
                 ],
             },

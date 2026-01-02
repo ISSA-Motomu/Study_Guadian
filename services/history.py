@@ -151,3 +151,68 @@ class HistoryService:
             return ranked
         except:
             return users
+
+    @staticmethod
+    def get_weekly_exp_ranking():
+        """今週の獲得EXPランキング（USERのみ）"""
+        sheet = GSheetService.get_worksheet("transactions")
+        if not sheet:
+            return []
+
+        now = datetime.datetime.now()
+        week_start = now - datetime.timedelta(days=7)
+
+        user_exp = {}  # {user_id: total_exp}
+
+        try:
+            records = sheet.get_all_records()
+            for tx in records:
+                # tx: tx_id, user_id, amount, tx_type, related_id, timestamp
+                if tx.get("tx_type") != "REWARD":
+                    continue
+
+                ts_str = str(tx.get("timestamp"))
+                try:
+                    # フォーマットは "YYYY-MM-DD HH:MM:SS"
+                    tx_date = datetime.datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+                except:
+                    continue
+
+                if tx_date < week_start:
+                    continue
+
+                uid = str(tx.get("user_id"))
+                amount = int(tx.get("amount", 0))
+                user_exp[uid] = user_exp.get(uid, 0) + amount
+
+            # ユーザー情報と結合してフィルタリング
+            all_users = EconomyService.get_all_users()
+            ranking = []
+
+            for u in all_users:
+                uid = str(u.get("user_id"))
+                role = u.get("role")
+                if role != "USER":
+                    continue
+
+                earned = user_exp.get(uid, 0)
+                ranking.append(
+                    {
+                        "user_id": uid,
+                        "display_name": u.get("display_name"),
+                        "weekly_exp": earned,
+                    }
+                )
+
+            # ソート
+            ranking.sort(key=lambda x: x["weekly_exp"], reverse=True)
+
+            # 順位付け
+            for i, r in enumerate(ranking):
+                r["rank"] = i + 1
+
+            return ranking
+
+        except Exception as e:
+            print(f"Weekly Ranking Error: {e}")
+            return []

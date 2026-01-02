@@ -10,6 +10,8 @@ from bot_instance import line_bot_api
 from services.gsheet import GSheetService
 from services.economy import EconomyService
 from services.stats import SagaStats
+from services.history import HistoryService
+from services.status_service import StatusService
 from utils.template_loader import load_template
 
 # 簡易的な状態管理 (メモリ上)
@@ -121,10 +123,20 @@ def handle_postback(event, action, data):
             target_user_info["display_name"] if target_user_info else "ユーザー"
         )
 
+        # ランクアップ判定のための事前情報取得
+        old_stats = HistoryService.get_user_study_stats(target_id)
+        old_total = old_stats["total"]
+        old_rank_info = StatusService.get_rank_info(old_total)
+
         # 1. シートのステータスを更新
         if row_id and GSheetService.approve_study(int(row_id)):
             # 2. EXP付与 (承認成功時のみ)
             new_balance = EconomyService.add_exp(target_id, minutes, "STUDY_REWARD")
+
+            # ランクアップ判定
+            new_total = old_total + minutes
+            new_rank_info = StatusService.get_rank_info(new_total)
+            is_rank_up = new_rank_info["name"] != old_rank_info["name"]
 
             line_bot_api.reply_message(
                 event.reply_token,
@@ -135,12 +147,37 @@ def handle_postback(event, action, data):
 
             # 対象ユーザーへ通知（Push Message）
             try:
-                line_bot_api.push_message(
-                    target_id,
+                messages = []
+                messages.append(
                     TextSendMessage(
                         text=f"💮 勉強時間が承認されました！\n+{minutes} EXP\n(現在残高: {new_balance} EXP)"
-                    ),
+                    )
                 )
+
+                if is_rank_up:
+                    # ランクアップ通知
+                    import os
+                    from linebot.models import ImageSendMessage
+
+                    app_url = os.environ.get(
+                        "APP_URL", "https://your-app.herokuapp.com"
+                    )
+                    if app_url.endswith("/"):
+                        app_url = app_url[:-1]
+                    img_url = f"{app_url}/static/medals/{new_rank_info['img']}"
+
+                    messages.append(
+                        TextSendMessage(
+                            text=f"🎉 おめでとう！ランクアップ！\n新しいランク: {new_rank_info['name']}"
+                        )
+                    )
+                    messages.append(
+                        ImageSendMessage(
+                            original_content_url=img_url, preview_image_url=img_url
+                        )
+                    )
+
+                line_bot_api.push_message(target_id, messages)
             except Exception as e:
                 print(f"Pushエラー: {e}")
         else:
