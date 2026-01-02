@@ -9,7 +9,7 @@ from utils.template_loader import load_template
 def handle_message(event, text):
     user_id = event.source.user_id
 
-    if text in ["状況", "ステータス", "status"]:
+    if text in ["状況", "ステータス", "status", "詳細ステータス"]:
         # 1. Adminかどうかチェック
         if EconomyService.is_admin(user_id):
             # --- Admin View (Transaction History) ---
@@ -110,11 +110,18 @@ def handle_message(event, text):
             user_data["total_study_time"] = study_stats["total"]
             user_data["total_jobs"] = job_count
 
-            bubble = StatusService.create_life_skills_gui(user_data, inventory)
+            if text == "詳細ステータス":
+                # レーダーチャート表示
+                bubble = StatusService.create_life_skills_gui(user_data, inventory)
+                alt_text = "詳細ステータス"
+            else:
+                # 勲章ホーム画面表示
+                bubble = StatusService.create_medal_home_gui(user_data)
+                alt_text = "ホーム画面"
 
             line_bot_api.reply_message(
                 event.reply_token,
-                FlexSendMessage(alt_text="マイステータス", contents=bubble),
+                FlexSendMessage(alt_text=alt_text, contents=bubble),
             )
             return True
 

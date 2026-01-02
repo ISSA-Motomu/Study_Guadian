@@ -4,6 +4,225 @@ import json
 
 class StatusService:
     @staticmethod
+    def create_medal_home_gui(user_data):
+        """勲章メインのホーム画面を生成"""
+        total_minutes = int(user_data.get("total_study_time", 0))
+
+        # ランク定義
+        # E: 0-180, D: 180-600, C: 600-1200, B: 1200-3000, A: 3000-6000, S: 6000+
+        if total_minutes >= 6000:
+            rank_data = {
+                "name": "Rank S: 伝説の勇者",
+                "color": "#9932CC",
+                "next": None,
+                "base": 6000,
+            }
+            # 宝冠章イメージ
+            img_url = "https://placehold.co/400x400/9932CC/FFFFFF/png?text=Rank+S"
+        elif total_minutes >= 3000:
+            rank_data = {
+                "name": "Rank A: 黄金の騎士",
+                "color": "#FFD700",
+                "next": 6000,
+                "base": 3000,
+            }
+            # 金メダルイメージ
+            img_url = "https://placehold.co/400x400/FFD700/000000/png?text=Rank+A"
+        elif total_minutes >= 1200:
+            rank_data = {
+                "name": "Rank B: 銀の熟練者",
+                "color": "#C0C0C0",
+                "next": 3000,
+                "base": 1200,
+            }
+            # 銀メダルイメージ
+            img_url = "https://placehold.co/400x400/C0C0C0/000000/png?text=Rank+B"
+        elif total_minutes >= 600:
+            rank_data = {
+                "name": "Rank C: 銅の戦士",
+                "color": "#CD7F32",
+                "next": 1200,
+                "base": 600,
+            }
+            # 銅メダルイメージ
+            img_url = "https://placehold.co/400x400/CD7F32/000000/png?text=Rank+C"
+        elif total_minutes >= 180:
+            rank_data = {
+                "name": "Rank D: 鉄の駆け出し",
+                "color": "#708090",
+                "next": 600,
+                "base": 180,
+            }
+            # 鉄の記章イメージ
+            img_url = "https://placehold.co/400x400/708090/FFFFFF/png?text=Rank+D"
+        else:
+            rank_data = {
+                "name": "Rank E: 見習い",
+                "color": "#A9A9A9",
+                "next": 180,
+                "base": 0,
+            }
+            # 缶バッジイメージ
+            img_url = "https://placehold.co/400x400/A9A9A9/FFFFFF/png?text=Rank+E"
+
+        # 次のランクまでの計算
+        if rank_data["next"]:
+            needed = rank_data["next"] - total_minutes
+            current_in_rank = total_minutes - rank_data["base"]
+            total_in_rank = rank_data["next"] - rank_data["base"]
+            progress_percent = int((current_in_rank / total_in_rank) * 100)
+            next_text = f"あと {needed}分 で昇格"
+        else:
+            progress_percent = 100
+            next_text = "最高ランク到達！"
+
+        # リボン（スキル）の判定 (仮ロジック)
+        ribbons = []
+        # 赤リボン: 早起き (仮: 常に表示)
+        ribbons.append({"color": "#ff5555", "text": "早起き"})
+        # 青リボン: 家事 (ジョブ数 > 10)
+        if int(user_data.get("total_jobs", 0)) >= 10:
+            ribbons.append({"color": "#5555ff", "text": "家事王"})
+        # 緑リボン: 継続 (仮)
+        ribbons.append({"color": "#55ff55", "text": "継続"})
+
+        ribbon_contents = []
+        for r in ribbons:
+            ribbon_contents.append(
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "width": "30px",
+                    "height": "40px",
+                    "backgroundColor": r["color"],
+                    "cornerRadius": "sm",
+                    "margin": "sm",
+                }
+            )
+
+        bubble = {
+            "type": "bubble",
+            "size": "giga",
+            "styles": {
+                "header": {"backgroundColor": "#1a1a1a"},
+                "body": {"backgroundColor": "#202020"},
+                "footer": {"backgroundColor": "#1a1a1a"},
+            },
+            "header": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "CURRENT RANK",
+                        "color": "#888888",
+                        "size": "xxs",
+                        "weight": "bold",
+                        "align": "center",
+                        "letterSpacing": "2px",
+                    },
+                    {
+                        "type": "text",
+                        "text": rank_data["name"],
+                        "color": rank_data["color"],
+                        "size": "lg",
+                        "weight": "bold",
+                        "align": "center",
+                        "margin": "sm",
+                    },
+                ],
+            },
+            "hero": {
+                "type": "image",
+                "url": img_url,
+                "size": "4xl",
+                "aspectRatio": "1:1",
+                "aspectMode": "fit",
+                "action": {
+                    "type": "message",
+                    "label": "詳細",
+                    "text": "詳細ステータス",
+                },
+                "margin": "md",
+            },
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "NEXT RANK UP",
+                        "color": "#aaaaaa",
+                        "size": "xxs",
+                        "margin": "md",
+                    },
+                    {
+                        "type": "box",
+                        "layout": "vertical",
+                        "width": "100%",
+                        "backgroundColor": "#444444",
+                        "height": "4px",
+                        "margin": "sm",
+                        "contents": [
+                            {
+                                "type": "box",
+                                "layout": "vertical",
+                                "width": f"{progress_percent}%",
+                                "backgroundColor": rank_data["color"],
+                                "height": "4px",
+                            }
+                        ],
+                    },
+                    {
+                        "type": "text",
+                        "text": next_text,
+                        "color": "#ffffff",
+                        "size": "xs",
+                        "align": "end",
+                        "margin": "sm",
+                    },
+                    # リボン表示エリア
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "contents": ribbon_contents,
+                        "margin": "lg",
+                        "justifyContent": "center",
+                    },
+                ],
+            },
+            "footer": {
+                "type": "box",
+                "layout": "horizontal",
+                "spacing": "sm",
+                "contents": [
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "color": "#bbbbbb",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "勉強する",
+                            "text": "勉強開始",
+                        },
+                    },
+                    {
+                        "type": "button",
+                        "style": "secondary",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "データ",
+                            "text": "詳細ステータス",
+                        },
+                    },
+                ],
+            },
+        }
+        return bubble
+
+    @staticmethod
     def create_life_skills_gui(user_data, inventory_items):
         # 1. パラメータ計算
         # user_data keys: user_id, display_name, current_exp, total_study_time, role, inventory_json
