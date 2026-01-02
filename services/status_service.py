@@ -172,6 +172,7 @@ class StatusService:
                 "layout": "vertical",
                 "contents": [],
                 "height": "1px",
+                "paddingAll": "none"
             },
             "body": {
                 "type": "box",
