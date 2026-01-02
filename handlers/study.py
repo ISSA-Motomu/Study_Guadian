@@ -1,10 +1,19 @@
 import datetime
-from linebot.models import TextSendMessage, FlexSendMessage
+from linebot.models import (
+    TextSendMessage,
+    FlexSendMessage,
+    QuickReply,
+    QuickReplyButton,
+    MessageAction,
+)
 from bot_instance import line_bot_api
 from services.gsheet import GSheetService
 from services.economy import EconomyService
 from services.stats import SagaStats
 from utils.template_loader import load_template
+
+# 簡易的な状態管理 (メモリ上)
+user_states = {}
 
 
 def handle_postback(event, action, data):
@@ -60,40 +69,19 @@ def handle_postback(event, action, data):
                         result["row_index"], minutes, stats["rank"]
                     )
 
-                hours, mins = divmod(minutes, 60)
+                # 状態を保存して、成果報告を促す
+                user_states[user_id] = {
+                    "state": "WAITING_COMMENT",
+                    "row_index": result["row_index"],
+                    "minutes": minutes,
+                }
 
-                # ユーザーへの返信
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(
-                        text=f"【記録終了】\nお疲れ様でした！\n勉強時間: {hours}時間{mins}分\n獲得予定EXP: {earned_exp} EXP\n\n親に承認依頼を送りました。承認されるまで待ってね！"
+                        text="【記録終了】\nお疲れ様でした！\n\n今日の成果を一言で教えてね。\n(例: 算数ドリル P20-22, 英単語50個)"
                     ),
                 )
-
-                # Adminへの通知
-                try:
-                    profile = line_bot_api.get_profile(user_id)
-                    user_name = profile.display_name
-                    admins = EconomyService.get_admin_users()
-                    admin_ids = [u["user_id"] for u in admins if u.get("user_id")]
-
-                    if admin_ids:
-                        approve_flex = load_template(
-                            "study_approve_request.json",
-                            user_name=user_name,
-                            hours=hours,
-                            mins=mins,
-                            earned_exp=earned_exp,
-                            user_id=user_id,
-                        )
-                        line_bot_api.multicast(
-                            admin_ids,
-                            FlexSendMessage(
-                                alt_text="勉強完了報告", contents=approve_flex
-                            ),
-                        )
-                except Exception as e:
-                    print(f"Admin通知エラー: {e}")
 
             except Exception as e:
                 print(f"計算エラー: {e}")
@@ -167,6 +155,51 @@ def handle_postback(event, action, data):
 
 
 def handle_message(event, text):
+    user_id = event.source.user_id
+
+    # 状態チェック
+    state_data = user_states.get(user_id)
+    if state_data:
+        state = state_data.get("state")
+
+        if state == "WAITING_COMMENT":
+            # コメントを受け取り、集中度を聞く
+            user_states[user_id]["comment"] = text
+            user_states[user_id]["state"] = "WAITING_CONCENTRATION"
+
+            # クイックリプライ作成
+            items = [
+                QuickReplyButton(action=MessageAction(label="5 (最高)", text="5")),
+                QuickReplyButton(action=MessageAction(label="4 (良い)", text="4")),
+                QuickReplyButton(action=MessageAction(label="3 (普通)", text="3")),
+                QuickReplyButton(action=MessageAction(label="2 (微妙)", text="2")),
+                QuickReplyButton(action=MessageAction(label="1 (ダメ)", text="1")),
+            ]
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="今日の集中度はどうでしたか？",
+                    quick_reply=QuickReply(items=items),
+                ),
+            )
+            return True
+
+        elif state == "WAITING_CONCENTRATION":
+            # 集中度を受け取り、完了処理へ
+            if text in ["1", "2", "3", "4", "5"]:
+                concentration = int(text)
+                finalize_study(event, user_id, state_data, concentration)
+                # 状態クリア
+                del user_states[user_id]
+                return True
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="1〜5の数字で答えてね。"),
+                )
+                return True
+
     if text == "勉強開始":
         # 教科選択ダイアログを表示
         subject_flex = load_template("study_subject_select.json")
@@ -189,3 +222,48 @@ def handle_message(event, text):
         return True
 
     return False
+
+
+def finalize_study(event, user_id, state_data, concentration):
+    row_index = state_data["row_index"]
+    minutes = state_data["minutes"]
+    comment = state_data.get("comment", "なし")
+
+    # 詳細情報を保存
+    GSheetService.update_study_details(row_index, comment, concentration)
+
+    hours, mins = divmod(minutes, 60)
+    earned_exp = minutes
+
+    # ユーザーへの返信
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(
+            text=f"記録しました！\n勉強時間: {hours}時間{mins}分\n成果: {comment}\n集中度: {concentration}/5\n\n親に承認依頼を送りました。"
+        ),
+    )
+
+    # Adminへの通知
+    try:
+        profile = line_bot_api.get_profile(user_id)
+        user_name = profile.display_name
+        admins = EconomyService.get_admin_users()
+        admin_ids = [u["user_id"] for u in admins if u.get("user_id")]
+
+        if admin_ids:
+            approve_flex = load_template(
+                "study_approve_request.json",
+                user_name=user_name,
+                hours=hours,
+                mins=mins,
+                earned_exp=earned_exp,
+                user_id=user_id,
+                comment=comment,
+                concentration=concentration,
+            )
+            line_bot_api.multicast(
+                admin_ids,
+                FlexSendMessage(alt_text="勉強完了報告", contents=approve_flex),
+            )
+    except Exception as e:
+        print(f"Admin通知エラー: {e}")

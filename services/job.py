@@ -85,7 +85,7 @@ class JobService:
             return False, "シートエラー"
 
         try:
-            cell = sheet.find(job_id)
+            cell = sheet.find(str(job_id))
             if not cell:
                 return False, "ジョブが見つかりません"
 
@@ -114,7 +114,7 @@ class JobService:
             return False, "シートエラー"
 
         try:
-            cell = sheet.find(job_id)
+            cell = sheet.find(str(job_id))
             if not cell:
                 return False, "ジョブが見つかりません"
 
@@ -140,7 +140,7 @@ class JobService:
             return False, "シートエラー"
 
         try:
-            cell = sheet.find(job_id)
+            cell = sheet.find(str(job_id))
             if not cell:
                 return False, "ジョブが見つかりません"
 

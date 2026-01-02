@@ -108,6 +108,21 @@ class GSheetService:
             return False
 
     @staticmethod
+    def update_study_details(row_index, comment, concentration):
+        """学習の成果と集中度を study_log シートに追記"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return False
+        try:
+            # J列(10): Comment, K列(11): Concentration
+            sheet.update_cell(row_index, 10, comment)
+            sheet.update_cell(row_index, 11, concentration)
+            return True
+        except Exception as e:
+            print(f"Details Update Error: {e}")
+            return False
+
+    @staticmethod
     def get_pending_studies():
         """承認待ちの学習記録を取得"""
         sheet = GSheetService.get_worksheet("study_log")

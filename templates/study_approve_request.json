@@ -32,6 +32,25 @@
         "type": "text",
         "text": "獲得予定: ${earned_exp} EXP",
         "color": "#ff5555"
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "📝 ${comment}",
+        "wrap": true,
+        "margin": "md",
+        "size": "sm",
+        "color": "#555555"
+      },
+      {
+        "type": "text",
+        "text": "🔥 集中度: ${concentration}/5",
+        "margin": "sm",
+        "size": "sm",
+        "color": "#555555"
       }
     ]
   },

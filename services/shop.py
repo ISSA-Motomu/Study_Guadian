@@ -45,7 +45,8 @@ class ShopService:
             return False
 
         try:
-            cell = sheet.find(request_id)
+            # request_id は文字列であることを保証する
+            cell = sheet.find(str(request_id))
             if not cell:
                 return False
             sheet.update_cell(cell.row, 5, "APPROVED")
@@ -53,7 +54,8 @@ class ShopService:
             # 商品キーを返す（アイテム名取得用）
             item_key = sheet.cell(cell.row, 3).value
             return item_key
-        except:
+        except Exception as e:
+            print(f"Shop Approve Error: {e}")
             return False
 
     @staticmethod
@@ -64,12 +66,14 @@ class ShopService:
             return False
 
         try:
-            cell = sheet.find(request_id)
+            # request_id は文字列であることを保証する
+            cell = sheet.find(str(request_id))
             if not cell:
                 return False
             sheet.update_cell(cell.row, 5, "DENIED")
             return True
-        except:
+        except Exception as e:
+            print(f"Shop Deny Error: {e}")
             return False
 
     @staticmethod
