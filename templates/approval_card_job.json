@@ -34,7 +34,7 @@
       },
       {
         "type": "text",
-        "text": "報酬: ${reward} 円",
+        "text": "報酬: ${reward} EXP",
         "margin": "md",
         "color": "#ff5555",
         "weight": "bold"

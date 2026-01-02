@@ -34,7 +34,7 @@
       },
       {
         "type": "text",
-        "text": "価格: ${cost} 円",
+        "text": "価格: ${cost} EXP",
         "margin": "md",
         "color": "#ff5555",
         "weight": "bold"
