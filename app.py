@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 # 新しい構成のインポート
 from bot_instance import line_bot_api, handler
-from handlers import study, shop, job, admin, status, common, help
+from handlers import study, shop, job, admin, status, common, help, gacha
 from services.history import HistoryService
 from services.economy import EconomyService
 from utils.debouncer import Debouncer
@@ -124,6 +124,8 @@ def handle_message(event):
     if admin.handle_message(event, msg):
         return
     if status.handle_message(event, msg):
+        return
+    if gacha.handle_message(event, msg):
         return
 
     # どのハンドラも処理しなかった場合

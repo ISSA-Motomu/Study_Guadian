@@ -16,54 +16,55 @@ class StatusService:
                 "color": "#9932CC",
                 "next": None,
                 "base": 6000,
+                "img": "rank_s.png",
             }
-            # 宝冠章イメージ
-            img_url = "https://placehold.co/400x400/9932CC/FFFFFF/png?text=Rank+S"
         elif total_minutes >= 3000:
             rank_data = {
                 "name": "Rank A: 黄金の騎士",
                 "color": "#FFD700",
                 "next": 6000,
                 "base": 3000,
+                "img": "rank_a.jpg",
             }
-            # 金メダルイメージ
-            img_url = "https://placehold.co/400x400/FFD700/000000/png?text=Rank+A"
         elif total_minutes >= 1200:
             rank_data = {
                 "name": "Rank B: 銀の熟練者",
                 "color": "#C0C0C0",
                 "next": 3000,
                 "base": 1200,
+                "img": "rank_b.png",
             }
-            # 銀メダルイメージ
-            img_url = "https://placehold.co/400x400/C0C0C0/000000/png?text=Rank+B"
         elif total_minutes >= 600:
             rank_data = {
                 "name": "Rank C: 銅の戦士",
                 "color": "#CD7F32",
                 "next": 1200,
                 "base": 600,
+                "img": "rank_c.png",
             }
-            # 銅メダルイメージ
-            img_url = "https://placehold.co/400x400/CD7F32/000000/png?text=Rank+C"
         elif total_minutes >= 180:
             rank_data = {
                 "name": "Rank D: 鉄の駆け出し",
                 "color": "#708090",
                 "next": 600,
                 "base": 180,
+                "img": "rank_d.png",
             }
-            # 鉄の記章イメージ
-            img_url = "https://placehold.co/400x400/708090/FFFFFF/png?text=Rank+D"
         else:
             rank_data = {
                 "name": "Rank E: 見習い",
                 "color": "#A9A9A9",
                 "next": 180,
                 "base": 0,
+                "img": "rank_e.png",
             }
-            # 缶バッジイメージ
-            img_url = "https://placehold.co/400x400/A9A9A9/FFFFFF/png?text=Rank+E"
+
+        import os
+
+        app_url = os.environ.get("APP_URL", "https://your-app.herokuapp.com")
+        if app_url.endswith("/"):
+            app_url = app_url[:-1]
+        img_url = f"{app_url}/static/medals/{rank_data['img']}"
 
         # 次のランクまでの計算
         if rank_data["next"]:
@@ -76,15 +77,15 @@ class StatusService:
             progress_percent = 100
             next_text = "最高ランク到達！"
 
-        # リボン（スキル）の判定 (仮ロジック)
+        # リボン（スキル）の判定
         ribbons = []
-        # 赤リボン: 早起き (仮: 常に表示)
-        ribbons.append({"color": "#ff5555", "text": "早起き"})
+        # 赤リボン: 早起き
+        ribbons.append({"color": "#ff5555", "text": "早起き", "icon": "⏰"})
         # 青リボン: 家事 (ジョブ数 > 10)
         if int(user_data.get("total_jobs", 0)) >= 10:
-            ribbons.append({"color": "#5555ff", "text": "家事王"})
+            ribbons.append({"color": "#5555ff", "text": "家事王", "icon": "🧹"})
         # 緑リボン: 継続 (仮)
-        ribbons.append({"color": "#55ff55", "text": "継続"})
+        ribbons.append({"color": "#55ff55", "text": "継続", "icon": "🔥"})
 
         ribbon_contents = []
         for r in ribbons:
@@ -92,11 +93,31 @@ class StatusService:
                 {
                     "type": "box",
                     "layout": "vertical",
-                    "width": "30px",
-                    "height": "40px",
-                    "backgroundColor": r["color"],
-                    "cornerRadius": "sm",
-                    "margin": "sm",
+                    "width": "60px",
+                    "contents": [
+                        {
+                            "type": "box",
+                            "layout": "vertical",
+                            "width": "40px",
+                            "height": "40px",
+                            "backgroundColor": r["color"],
+                            "cornerRadius": "md",
+                            "justifyContent": "center",
+                            "alignItems": "center",
+                            "contents": [
+                                {"type": "text", "text": r["icon"], "size": "xl"}
+                            ],
+                            "margin": "auto",
+                        },
+                        {
+                            "type": "text",
+                            "text": r["text"],
+                            "size": "xxs",
+                            "color": "#aaaaaa",
+                            "align": "center",
+                            "margin": "xs",
+                        },
+                    ],
                 }
             )
 
@@ -215,6 +236,17 @@ class StatusService:
                             "type": "message",
                             "label": "データ",
                             "text": "詳細ステータス",
+                        },
+                    },
+                    {
+                        "type": "button",
+                        "style": "primary",
+                        "color": "#ff5555",
+                        "height": "sm",
+                        "action": {
+                            "type": "message",
+                            "label": "ガチャ",
+                            "text": "ガチャ",
                         },
                     },
                 ],

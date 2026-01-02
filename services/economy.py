@@ -111,6 +111,33 @@ class EconomyService:
         return items
 
     @staticmethod
+    def add_inventory_item(user_id, item_key, count=1):
+        """インベントリにアイテムを追加"""
+        sheet = GSheetService.get_worksheet("users")
+        if not sheet:
+            return False
+
+        cell = sheet.find(user_id)
+        if not cell:
+            return False
+
+        row_num = cell.row
+        # inventory_json は F列(6列目)
+        inv_cell = sheet.cell(row_num, 6)
+        inv_json = inv_cell.value
+
+        try:
+            inv_dict = json.loads(inv_json) if inv_json else {}
+        except:
+            inv_dict = {}
+
+        current_count = inv_dict.get(item_key, 0)
+        inv_dict[item_key] = current_count + count
+
+        sheet.update_cell(row_num, 6, json.dumps(inv_dict))
+        return True
+
+    @staticmethod
     def add_exp(user_id, amount, related_id="STUDY"):
         """EXPを加算（減算ならマイナス）し、履歴に残す"""
         users_sheet = GSheetService.get_worksheet("users")
