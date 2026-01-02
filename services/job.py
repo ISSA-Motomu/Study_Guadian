@@ -42,6 +42,23 @@ class JobService:
         return jobs
 
     @staticmethod
+    def get_pending_reviews():
+        """承認待ち(REVIEW)のジョブを取得"""
+        sheet = GSheetService.get_worksheet("jobs")
+        if not sheet:
+            return []
+
+        reviews = []
+        try:
+            records = sheet.get_all_records()
+            for row in records:
+                if row.get("status") == "REVIEW":
+                    reviews.append(row)
+        except Exception as e:
+            print(f"Review List Error: {e}")
+        return reviews
+
+    @staticmethod
     def create_job(title, reward, deadline, client_id):
         """新しいジョブを作成"""
         sheet = GSheetService.get_worksheet("jobs")

@@ -1,0 +1,59 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#FF9800",
+    "contents": [
+      {
+        "type": "text",
+        "text": "🧹 お手伝い報告",
+        "color": "#ffffff",
+        "weight": "bold"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "${user_name}",
+        "weight": "bold",
+        "size": "lg"
+      },
+      {
+        "type": "text",
+        "text": "${job_name}",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "報酬: ${reward} 円",
+        "margin": "md",
+        "color": "#ff5555",
+        "weight": "bold"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "action": {
+          "type": "postback",
+          "label": "承認",
+          "data": "action=job_approve&row_id=${row_index}&target=${user_id}&amount=${reward}"
+        }
+      }
+    ]
+  }
+}

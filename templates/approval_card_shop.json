@@ -1,0 +1,59 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#9C27B0",
+    "contents": [
+      {
+        "type": "text",
+        "text": "🛍️ 買い物リクエスト",
+        "color": "#ffffff",
+        "weight": "bold"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "${user_name}",
+        "weight": "bold",
+        "size": "lg"
+      },
+      {
+        "type": "text",
+        "text": "${item_name}",
+        "margin": "md"
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "価格: ${cost} 円",
+        "margin": "md",
+        "color": "#ff5555",
+        "weight": "bold"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "action": {
+          "type": "postback",
+          "label": "承認",
+          "data": "action=shop_approve&row_id=${row_index}&target=${user_id}&cost=${cost}"
+        }
+      }
+    ]
+  }
+}

@@ -1,7 +1,74 @@
+import datetime
 from services.gsheet import GSheetService
 
 
 class ShopService:
+    @staticmethod
+    def create_request(user_id, item_key, cost):
+        """購入リクエストを作成"""
+        sheet = GSheetService.get_worksheet("shop_requests")
+        if not sheet:
+            return False
+
+        try:
+            req_id = f"req_{int(datetime.datetime.now().timestamp())}"
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # ID, User, Item, Cost, Status, Time
+            sheet.append_row([req_id, user_id, item_key, cost, "PENDING", now_str])
+            return req_id
+        except Exception as e:
+            print(f"Shop Request Error: {e}")
+            return False
+
+    @staticmethod
+    def get_pending_requests():
+        """承認待ちの購入リクエストを取得"""
+        sheet = GSheetService.get_worksheet("shop_requests")
+        if not sheet:
+            return []
+
+        pending = []
+        try:
+            records = sheet.get_all_records()
+            for row in records:
+                if row.get("status") == "PENDING":
+                    pending.append(row)
+        except Exception as e:
+            print(f"Shop Pending Error: {e}")
+        return pending
+
+    @staticmethod
+    def approve_request(request_id):
+        """購入リクエストを承認"""
+        sheet = GSheetService.get_worksheet("shop_requests")
+        if not sheet:
+            return False
+
+        try:
+            cell = sheet.find(request_id)
+            if not cell:
+                return False
+            sheet.update_cell(cell.row, 5, "APPROVED")
+            return True
+        except:
+            return False
+
+    @staticmethod
+    def deny_request(request_id):
+        """購入リクエストを却下"""
+        sheet = GSheetService.get_worksheet("shop_requests")
+        if not sheet:
+            return False
+
+        try:
+            cell = sheet.find(request_id)
+            if not cell:
+                return False
+            sheet.update_cell(cell.row, 5, "DENIED")
+            return True
+        except:
+            return False
+
     @staticmethod
     def get_items():
         """スプレッドシートから商品リストを取得"""

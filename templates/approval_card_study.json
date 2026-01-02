@@ -1,0 +1,60 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "backgroundColor": "#27ACB2",
+    "contents": [
+      {
+        "type": "text",
+        "text": "📖 勉強記録",
+        "color": "#ffffff",
+        "weight": "bold"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "${user_name}",
+        "weight": "bold",
+        "size": "lg"
+      },
+      {
+        "type": "text",
+        "text": "${date} ${start_time} ~ ${end_time}",
+        "size": "xs",
+        "color": "#aaaaaa"
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "獲得予定: ${earned_exp} EXP",
+        "margin": "md",
+        "color": "#ff5555",
+        "weight": "bold"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "style": "primary",
+        "action": {
+          "type": "postback",
+          "label": "承認",
+          "data": "action=study_approve&row_id=${row_index}&target=${user_id}&minutes=${earned_exp}"
+        }
+      }
+    ]
+  }
+}
