@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 # 新しい構成のインポート
 from bot_instance import line_bot_api, handler
-from handlers import study, shop, job, admin, status, common
+from handlers import study, shop, job, admin, status, common, help
 from services.history import HistoryService
 from services.economy import EconomyService
 
@@ -79,6 +79,8 @@ def handle_message(event):
     common.handle_message(event, msg)
 
     # 各ハンドラに委譲
+    if help.handle_message(event, msg):
+        return
     if study.handle_message(event, msg):
         return
     if shop.handle_message(event, msg):
