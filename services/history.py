@@ -96,6 +96,58 @@ class HistoryService:
         return stats
 
     @staticmethod
+    def get_user_weekly_daily_stats(user_id):
+        """ユーザーの直近7日間の日別学習時間"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return []
+
+        now = datetime.datetime.now()
+        # 今日を含む過去7日間
+        dates = [(now - datetime.timedelta(days=i)) for i in range(6, -1, -1)]
+        # date_str keys: "YYYY-MM-DD"
+        daily_map = {d.strftime("%Y-%m-%d"): 0 for d in dates}
+
+        # 曜日ラベル用
+        weekdays = ["月", "火", "水", "木", "金", "土", "日"]
+
+        try:
+            records = sheet.get_all_values()
+            for row in records[1:]:
+                if len(row) < 6:
+                    continue
+                if row[0] != user_id:
+                    continue
+                if row[5] != "APPROVED":
+                    continue
+
+                date_str = row[2]
+                if date_str in daily_map:
+                    start_str = row[3]
+                    end_str = row[4]
+                    try:
+                        s = datetime.datetime.strptime(start_str, "%H:%M:%S")
+                        e = datetime.datetime.strptime(end_str, "%H:%M:%S")
+                        if e < s:
+                            e += datetime.timedelta(days=1)
+                        minutes = int((e - s).total_seconds() / 60)
+                        daily_map[date_str] += minutes
+                    except:
+                        pass
+        except Exception as e:
+            print(f"Daily Stats Error: {e}")
+
+        # リスト形式に変換
+        result = []
+        for d in dates:
+            d_str = d.strftime("%Y-%m-%d")
+            mins = daily_map[d_str]
+            label = f"{d.month}/{d.day}({weekdays[d.weekday()]})"
+            result.append({"date": d_str, "label": label, "minutes": mins})
+
+        return result
+
+    @staticmethod
     def get_user_job_history(user_id, limit=5):
         """ユーザーの完了したジョブ履歴"""
         sheet = GSheetService.get_worksheet("jobs")

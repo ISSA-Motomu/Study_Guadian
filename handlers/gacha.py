@@ -2,12 +2,28 @@ import random
 from linebot.models import FlexSendMessage, TextSendMessage
 from bot_instance import line_bot_api
 from services.economy import EconomyService
+from services.history import HistoryService
+from services.status_service import StatusService
 
 
 def handle_message(event, text):
     user_id = event.source.user_id
 
     if text == "ガチャ":
+        # 0. ランク確認 (Rank Eは不可)
+        study_stats = HistoryService.get_user_study_stats(user_id)
+        total_minutes = study_stats["total"]
+        rank_info = StatusService.get_rank_info(total_minutes)
+
+        if rank_info["name"].startswith("Rank E"):
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="🔒 ガチャはロックされています。\n\n「Rank D」以上になると解禁されます。\nまずは勉強してランクを上げよう！"
+                ),
+            )
+            return True
+
         # 1. コスト確認
         COST = 500
         if not EconomyService.check_balance(user_id, COST):

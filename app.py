@@ -109,8 +109,9 @@ def handle_postback(event):
 def handle_message(event):
     msg = event.message.text
 
-    # 共通処理（ユーザー登録など）
-    common.handle_message(event, msg)
+    # 共通処理（ユーザー登録・オンボーディング）
+    if common.handle_message(event, msg):
+        return
 
     # 各ハンドラに委譲
     if help.handle_message(event, msg):

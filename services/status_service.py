@@ -266,8 +266,8 @@ class StatusService:
                     {
                         "type": "image",
                         "url": img_url,
-                        "flex": 1,
-                        "size": "xs",
+                        "flex": 2,
+                        "size": "lg",
                         "aspectRatio": "1:1",
                         "aspectMode": "fit",
                         "align": "end",
@@ -371,56 +371,61 @@ class StatusService:
         return bubble
 
     @staticmethod
-    def create_life_skills_gui(user_data, inventory_items):
-        # 1. パラメータ計算
-        # user_data keys: user_id, display_name, current_exp, total_study_time, role, inventory_json
+    def create_weekly_graph_gui(user_data, weekly_history, inventory_items):
+        """週間学習記録の棒グラフ画面を生成"""
 
-        total_study_time = int(user_data.get("total_study_time", 0))
-        current_exp = int(user_data.get("current_exp", 0))
+        # 最大値を求めてスケーリング (最低でも60分を最大とする)
+        max_min = max([d["minutes"] for d in weekly_history] + [60])
 
-        # 仮のロジック
-        stats = {
-            "知力": min(100, int(total_study_time / 10)),  # 1000分でMAX
-            "労働": min(100, int(current_exp / 50)),  # 仮: EXPを労働の代替指標に
-            "資産": min(100, int(current_exp / 100)),  # EXPが資産
-            "規律": 80,  # 仮
-            "運": 50,  # 仮
-        }
+        bars = []
+        for day in weekly_history:
+            minutes = day["minutes"]
+            height_percent = int((minutes / max_min) * 100)
+            if height_percent < 1:
+                height_percent = 1  # 最低1%
 
-        # 2. レーダーチャート画像のURL生成 (QuickChart API)
-        chart_config = {
-            "type": "radar",
-            "data": {
-                "labels": ["Brain", "Labor", "Cash", "Rule", "Luck"],
-                "datasets": [
-                    {
-                        "label": "User Stats",
-                        "data": [
-                            stats["知力"],
-                            stats["労働"],
-                            stats["資産"],
-                            stats["規律"],
-                            stats["運"],
-                        ],
-                        "backgroundColor": "rgba(39, 172, 178, 0.5)",
-                        "borderColor": "#27ACB2",
-                        "pointBackgroundColor": "#fff",
-                    }
-                ],
-            },
-            "options": {
-                "scale": {"ticks": {"min": 0, "max": 100, "display": False}},
-                "legend": {"display": False},
-            },
-        }
+            # 棒の色 (勉強した日は青、0はグレー)
+            bar_color = "#5555ff" if minutes > 0 else "#333333"
 
-        chart_url = "https://quickchart.io/chart?c=" + urllib.parse.quote(
-            json.dumps(chart_config)
-        )
+            bars.append(
+                {
+                    "type": "box",
+                    "layout": "vertical",
+                    "flex": 1,
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": str(minutes),
+                            "size": "xxs",
+                            "align": "center",
+                            "color": "#ffffff",
+                            "margin": "xs",
+                        },
+                        {
+                            "type": "box",
+                            "layout": "vertical",
+                            "width": "12px",
+                            "height": f"{height_percent}%",
+                            "backgroundColor": bar_color,
+                            "cornerRadius": "sm",
+                            "margin": "xs",
+                        },
+                        {
+                            "type": "text",
+                            "text": day["label"].split("(")[1][:-1],  # (月) -> 月
+                            "size": "xxs",
+                            "align": "center",
+                            "color": "#aaaaaa",
+                            "margin": "xs",
+                        },
+                    ],
+                    "alignItems": "center",
+                    "justifyContent": "flex-end",
+                }
+            )
 
-        # 3. インベントリ（所持品）のカルーセル作成
+        # インベントリ（所持品）のカルーセル作成
         inventory_bubbles = []
-
         if not inventory_items:
             inventory_bubbles.append(
                 {
@@ -433,20 +438,19 @@ class StatusService:
             )
         else:
             for item in inventory_items:
-                # item structure: {"name": "...", "icon": "...", "count": 1}
                 inventory_bubbles.append(
                     {
                         "type": "box",
                         "layout": "vertical",
-                        "backgroundColor": "#f0f0f0",
+                        "backgroundColor": "#333333",
                         "cornerRadius": "md",
-                        "paddingAll": "md",
+                        "paddingAll": "sm",
                         "width": "80px",
                         "contents": [
                             {
                                 "type": "text",
                                 "text": item.get("icon", "📦"),
-                                "size": "xxl",
+                                "size": "xl",
                                 "align": "center",
                             },
                             {
@@ -456,60 +460,77 @@ class StatusService:
                                 "align": "center",
                                 "wrap": True,
                                 "margin": "sm",
+                                "color": "#ffffff",
                             },
                             {
                                 "type": "text",
                                 "text": f"x{item.get('count', 1)}",
                                 "size": "xs",
                                 "align": "center",
-                                "color": "#27ACB2",
+                                "color": "#FFD700",
                                 "weight": "bold",
                             },
                         ],
                     }
                 )
 
-        # 4. Flex Message 全体構築
         bubble = {
             "type": "bubble",
+            "size": "mega",
+            "styles": {
+                "header": {"backgroundColor": "#1a1a1a"},
+                "body": {"backgroundColor": "#202020"},
+                "footer": {"backgroundColor": "#1a1a1a"},
+            },
             "header": {
                 "type": "box",
                 "layout": "vertical",
                 "contents": [
                     {
                         "type": "text",
-                        "text": "LIFE SKILLS",
+                        "text": "WEEKLY REPORT",
+                        "color": "#888888",
+                        "size": "xxs",
                         "weight": "bold",
-                        "color": "#27ACB2",
-                        "size": "sm",
+                        "letterSpacing": "2px",
                     },
                     {
                         "type": "text",
-                        "text": f"{user_data.get('display_name')} の生活力",
+                        "text": f"{user_data['display_name']}の学習記録",
+                        "color": "#ffffff",
+                        "size": "md",
                         "weight": "bold",
-                        "size": "xl",
                     },
                 ],
-            },
-            "hero": {
-                "type": "image",
-                "url": chart_url,
-                "size": "full",
-                "aspectRatio": "1:1",
-                "aspectMode": "cover",
             },
             "body": {
                 "type": "box",
                 "layout": "vertical",
                 "contents": [
-                    {"type": "separator", "margin": "md"},
+                    {
+                        "type": "box",
+                        "layout": "horizontal",
+                        "height": "150px",
+                        "contents": bars,
+                        "alignItems": "flex-end",
+                    },
+                    {"type": "separator", "margin": "md", "color": "#444444"},
+                    {
+                        "type": "text",
+                        "text": f"Total: {sum([d['minutes'] for d in weekly_history])} min",
+                        "size": "sm",
+                        "color": "#ffffff",
+                        "align": "end",
+                        "margin": "md",
+                    },
+                    {"type": "separator", "margin": "md", "color": "#444444"},
                     {
                         "type": "text",
                         "text": "🎒 ITEMS",
                         "weight": "bold",
                         "size": "sm",
                         "margin": "md",
-                        "color": "#555555",
+                        "color": "#aaaaaa",
                     },
                     {
                         "type": "box",

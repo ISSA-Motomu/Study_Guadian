@@ -112,9 +112,12 @@ def handle_message(event, text):
             user_data["total_jobs"] = job_count
 
             if text == "詳細ステータス":
-                # レーダーチャート表示
-                bubble = StatusService.create_life_skills_gui(user_data, inventory)
-                alt_text = "詳細ステータス"
+                # 週間学習グラフ表示
+                weekly_history = HistoryService.get_user_weekly_daily_stats(user_id)
+                bubble = StatusService.create_weekly_graph_gui(
+                    user_data, weekly_history, inventory
+                )
+                alt_text = "週間学習レポート"
             else:
                 # 勲章ホーム画面表示
                 bubble = StatusService.create_medal_home_gui(user_data, weekly_ranking)
