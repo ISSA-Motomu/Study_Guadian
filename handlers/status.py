@@ -111,6 +111,33 @@ def handle_message(event, text):
                 monthly_study=study_stats["monthly"],
             )
 
+            # Looker Studioボタンをユーザー画面にも追加
+            import os
+
+            looker_url = os.environ.get(
+                "LOOKER_STUDIO_URL", "https://lookerstudio.google.com/s/uS2xDhhDtAw"
+            )
+            personal_bubble = carousel["contents"][0]
+            if "footer" not in personal_bubble:
+                personal_bubble["footer"] = {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [],
+                }
+
+            personal_bubble["footer"]["contents"].append(
+                {
+                    "type": "button",
+                    "style": "link",
+                    "height": "sm",
+                    "action": {
+                        "type": "uri",
+                        "label": "Looker Studioで分析",
+                        "uri": looker_url,
+                    },
+                }
+            )
+
             # Job List Injection
             # carousel["contents"][0] is Personal Bubble
             # body -> contents[6] is Job List Container (index based on template structure)

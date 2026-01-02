@@ -47,13 +47,20 @@ def handle_message(event, text):
                 p_type = item["type"]
                 data = item["data"]
 
+                # 必須項目のサニタイズ (空文字だとLINE APIエラーになるため)
+                user_name = data.get("user_name")
+                if not user_name:
+                    user_name = str(data.get("user_id", "Unknown"))
+                if not user_name:
+                    user_name = "Unknown"
+
                 if p_type == "study":
                     bubble = load_template(
                         "approval_card_study.json",
-                        user_name=data["user_name"],
-                        date=data["date"],
-                        start_time=data["start_time"],
-                        end_time=data["end_time"],
+                        user_name=user_name,
+                        date=data.get("date", ""),
+                        start_time=data.get("start_time", ""),
+                        end_time=data.get("end_time", ""),
                         earned_exp=data.get("earned_exp", 0),
                         row_index=data["row_index"],
                         user_id=data["user_id"],
@@ -71,10 +78,10 @@ def handle_message(event, text):
                                 mins = 90
                             bubble = load_template(
                                 "approval_card_study.json",
-                                user_name=data["user_name"],
-                                date=data["date"],
-                                start_time=data["start_time"],
-                                end_time=data["end_time"],
+                                user_name=user_name,
+                                date=data.get("date", ""),
+                                start_time=data.get("start_time", ""),
+                                end_time=data.get("end_time", ""),
                                 earned_exp=mins,
                                 row_index=data["row_index"],
                                 user_id=data["user_id"],
@@ -85,10 +92,14 @@ def handle_message(event, text):
                         bubbles.append(bubble)
 
                 elif p_type == "job":
+                    job_title = data.get("job_title")
+                    if not job_title:
+                        job_title = "無題のタスク"
+
                     bubble = load_template(
                         "approval_card_job.json",
-                        user_name=data["user_name"],
-                        job_name=data["job_title"],
+                        user_name=user_name,
+                        job_name=job_title,
                         reward=data["reward"],
                         row_index=data["job_id"],
                         user_id=data["user_id"],
@@ -100,14 +111,17 @@ def handle_message(event, text):
                     if shop_items_cache is None:
                         shop_items_cache = ShopService.get_items()
 
-                    item_name = data["item_key"]
+                    item_name = data.get("item_key", "商品")
                     item_info = shop_items_cache.get(data["item_key"])
                     if item_info:
                         item_name = item_info["name"]
 
+                    if not item_name:
+                        item_name = "商品"
+
                     bubble = load_template(
                         "approval_card_shop.json",
-                        user_name=data["user_name"],
+                        user_name=user_name,
                         item_name=item_name,
                         cost=data["cost"],
                         row_index=data["request_id"],
