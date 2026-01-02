@@ -2,20 +2,25 @@
   "type": "box",
   "layout": "horizontal",
   "margin": "md",
+  "alignItems": "center",
   "contents": [
     {
       "type": "text",
       "text": "${name}",
-      "flex": 3,
+      "flex": 4,
+      "wrap": true,
+      "size": "sm",
+      "color": "#333333",
       "gravity": "center"
     },
     {
       "type": "text",
       "text": "${cost} EXP",
-      "flex": 1,
+      "flex": 2,
+      "size": "sm",
       "align": "end",
-      "gravity": "center",
-      "color": "#27ACB2"
+      "color": "#ff8800",
+      "gravity": "center"
     },
     {
       "type": "button",
@@ -25,7 +30,9 @@
         "data": "action=buy&item=${key}"
       },
       "style": "primary",
-      "flex": 2
+      "height": "sm",
+      "flex": 2,
+      "margin": "sm"
     }
   ]
 }
