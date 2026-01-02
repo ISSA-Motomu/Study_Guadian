@@ -110,7 +110,7 @@ def handle_message(event, text):
             user_data = user_info.copy()
             user_data["total_study_time"] = study_stats["total"]
             user_data["total_jobs"] = job_count
-            
+
             if text == "詳細ステータス":
                 # レーダーチャート表示
                 bubble = StatusService.create_life_skills_gui(user_data, inventory)
@@ -118,6 +118,9 @@ def handle_message(event, text):
             else:
                 # 勲章ホーム画面表示
                 bubble = StatusService.create_medal_home_gui(user_data, weekly_ranking)
+                alt_text = "ステータス"
+
+            line_bot_api.reply_message(
                 event.reply_token,
                 FlexSendMessage(alt_text=alt_text, contents=bubble),
             )
