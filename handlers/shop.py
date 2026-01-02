@@ -49,6 +49,9 @@ def handle_postback(event, action, data):
                 user_id, -item["cost"], f"BUY_{item_key}"
             )
 
+            # 購入リクエストを記録 (Admin承認用)
+            ShopService.create_request(user_id, item_key, item["cost"])
+
             # 親への承認リクエストカードを作成
             profile = line_bot_api.get_profile(user_id)
 
@@ -136,17 +139,17 @@ def handle_postback(event, action, data):
         cost = int(data.get("cost"))
         row_id = data.get("row_id")
 
-        # 残高チェック
-        if EconomyService.check_balance(target_id, cost):
-            # 1. EXP減算
-            new_balance = EconomyService.add_exp(target_id, -cost, "SHOP_APPROVE")
-
-            # 2. ステータス更新
-            ShopService.approve_request(row_id)
+        # 既に購入時にEXPは引かれているので、ここではステータス更新のみ
+        if ShopService.approve_request(row_id):
+            # 現在の残高を取得
+            user_info = EconomyService.get_user_info(target_id)
+            new_balance = user_info.get("current_exp", 0) if user_info else 0
 
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=f"承認しました！\n{cost} EXP を消費しました。"),
+                TextSendMessage(
+                    text=f"承認しました！\n(EXPは購入申請時に消費済みです)"
+                ),
             )
 
             # ユーザーへ通知
@@ -154,7 +157,7 @@ def handle_postback(event, action, data):
                 line_bot_api.push_message(
                     target_id,
                     TextSendMessage(
-                        text=f"🛍️ 買い物リクエストが承認されました！\n-{cost} EXP\n(現在残高: {new_balance} EXP)\n\n親に見せて使ってね！"
+                        text=f"🛍️ 買い物リクエストが承認されました！\n(現在残高: {new_balance} EXP)\n\n親に見せて使ってね！"
                     ),
                 )
             except:
@@ -162,7 +165,9 @@ def handle_postback(event, action, data):
         else:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=f"エラー：対象ユーザーのEXPが不足しています。"),
+                TextSendMessage(
+                    text=f"エラー：リクエストが見つからないか、既に処理されています。"
+                ),
             )
         return True
 

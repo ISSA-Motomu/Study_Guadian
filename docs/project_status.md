@@ -84,4 +84,4 @@ Study_Guardian/
   │    └── admin.py    (管理コマンド)
   ├── services/        (ビジネスロジック - 既存)
   └── templates/       (JSONテンプレート - 既存)
-```
+```aa
