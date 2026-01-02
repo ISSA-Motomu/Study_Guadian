@@ -1,0 +1,31 @@
+{
+  "type": "box",
+  "layout": "horizontal",
+  "margin": "sm",
+  "contents": [
+    {
+      "type": "text",
+      "text": "${title}",
+      "flex": 2,
+      "gravity": "center"
+    },
+    {
+      "type": "text",
+      "text": "${reward} EXP",
+      "flex": 1,
+      "align": "end",
+      "gravity": "center",
+      "color": "#27ACB2"
+    },
+    {
+      "type": "button",
+      "style": "secondary",
+      "flex": 1,
+      "action": {
+        "type": "postback",
+        "label": "受注",
+        "data": "action=job_accept&id=${job_id}"
+      }
+    }
+  ]
+}

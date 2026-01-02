@@ -1,0 +1,10 @@
+{
+  "type": "button",
+  "style": "link",
+  "margin": "md",
+  "action": {
+    "type": "uri",
+    "label": "➕ 新しい仕事を追加",
+    "uri": "${form_url}"
+  }
+}

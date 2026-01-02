@@ -97,19 +97,86 @@ def handle_postback(event):
 
                 duration = end_dt - start_dt
                 minutes = int(duration.total_seconds() / 60)
+
+                # 最大90分(1時間30分)に制限
+                if minutes > 90:
+                    minutes = 90
+
                 earned_exp = minutes
-                new_balance = EconomyService.add_exp(
-                    user_id, earned_exp, "STUDY_REWARD"
+                hours, mins = divmod(minutes, 60)
+
+                # ユーザーへの返信
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text=f"【記録終了】\nお疲れ様でした！\n勉強時間: {hours}時間{mins}分\n獲得予定EXP: {earned_exp} EXP\n\n親に承認依頼を送りました。承認されるまで待ってね！"
+                    ),
                 )
 
-                hours, mins = divmod(minutes, 60)
-                reply_text = f"【記録終了】\nお疲れ様でした！\n勉強時間: {hours}時間{mins}分\n獲得EXP: {earned_exp} EXP\n現在残高: {new_balance} EXP"
+                # Adminへの通知
+                try:
+                    profile = line_bot_api.get_profile(user_id)
+                    user_name = profile.display_name
+                    admins = EconomyService.get_admin_users()
+                    admin_ids = [u["user_id"] for u in admins if u.get("user_id")]
+
+                    if admin_ids:
+                        approve_flex = load_template(
+                            "study_approve_request.json",
+                            user_name=user_name,
+                            hours=hours,
+                            mins=mins,
+                            earned_exp=earned_exp,
+                            user_id=user_id,
+                        )
+                        line_bot_api.multicast(
+                            admin_ids,
+                            FlexSendMessage(
+                                alt_text="勉強完了報告", contents=approve_flex
+                            ),
+                        )
+                except Exception as e:
+                    print(f"Admin通知エラー: {e}")
+
             except Exception as e:
                 print(f"計算エラー: {e}")
-                reply_text = "時間の計算に失敗しました。"
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="時間の計算に失敗しました。"),
+                )
         else:
-            reply_text = "「勉強開始」が見つかりません。"
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="「勉強開始」が見つかりません。"),
+            )
+
+    elif action == "study_approve":
+        if not EconomyService.is_admin(user_id):
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="権限がありません")
+            )
+            return
+
+        target_id = data.get("target")
+        minutes = int(data.get("minutes"))
+
+        new_balance = EconomyService.add_exp(target_id, minutes, "STUDY_REWARD")
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=f"承認しました！\n{minutes} EXP を付与しました。"),
+        )
+
+        # 対象ユーザーへ通知（Push Message）
+        try:
+            line_bot_api.push_message(
+                target_id,
+                TextSendMessage(
+                    text=f"💮 勉強時間が承認されました！\n+{minutes} EXP\n(現在残高: {new_balance} EXP)"
+                ),
+            )
+        except Exception as e:
+            print(f"Pushエラー: {e}")
 
     # --- 1. 商品購入処理 (確認) ---
     elif action == "buy":
@@ -468,55 +535,32 @@ def handle_message(event):
     elif msg == "ジョブ" or msg == "お手伝い":
         # 1. 自分の担当中タスクを表示
         active_jobs = JobService.get_user_active_jobs(user_id)
-        contents = []
+
+        # ベースのテンプレートを読み込み
+        job_flex = load_template("job_list.json")
+        contents = job_flex["body"]["contents"]
 
         if active_jobs:
-            contents.append(
-                {
-                    "type": "text",
-                    "text": "🔥 進行中のタスク",
-                    "weight": "bold",
-                    "color": "#ff5555",
-                }
+            header = load_template(
+                "job_section_header.json", text="🔥 進行中のタスク", color="#ff5555"
             )
+            contents.append(header)
+
             for job in active_jobs:
-                contents.append(
-                    {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "margin": "sm",
-                        "contents": [
-                            {
-                                "type": "text",
-                                "text": job["title"],
-                                "flex": 2,
-                                "gravity": "center",
-                            },
-                            {
-                                "type": "button",
-                                "style": "primary",
-                                "flex": 1,
-                                "action": {
-                                    "type": "postback",
-                                    "label": "完了",
-                                    "data": f"action=job_finish&id={job['job_id']}",
-                                },
-                            },
-                        ],
-                    }
+                row = load_template(
+                    "job_row_active.json", title=job["title"], job_id=job["job_id"]
                 )
+                contents.append(row)
+
             contents.append({"type": "separator", "margin": "md"})
 
         # 2. 募集中のタスクを表示
         open_jobs = JobService.get_open_jobs()
-        contents.append(
-            {
-                "type": "text",
-                "text": "📋 募集中のタスク",
-                "weight": "bold",
-                "margin": "md",
-            }
+
+        header_open = load_template(
+            "job_section_header.json", text="📋 募集中のタスク", color="#333333"
         )
+        contents.append(header_open)
 
         if not open_jobs:
             contents.append(
@@ -530,72 +574,22 @@ def handle_message(event):
             )
         else:
             for job in open_jobs:
-                contents.append(
-                    {
-                        "type": "box",
-                        "layout": "horizontal",
-                        "margin": "sm",
-                        "contents": [
-                            {
-                                "type": "text",
-                                "text": job["title"],
-                                "flex": 2,
-                                "gravity": "center",
-                            },
-                            {
-                                "type": "text",
-                                "text": f"{job['reward']} EXP",
-                                "flex": 1,
-                                "align": "end",
-                                "gravity": "center",
-                                "color": "#27ACB2",
-                            },
-                            {
-                                "type": "button",
-                                "style": "secondary",
-                                "flex": 1,
-                                "action": {
-                                    "type": "postback",
-                                    "label": "受注",
-                                    "data": f"action=job_accept&id={job['job_id']}",
-                                },
-                            },
-                        ],
-                    }
+                row = load_template(
+                    "job_row_open.json",
+                    title=job["title"],
+                    reward=job["reward"],
+                    job_id=job["job_id"],
                 )
+                contents.append(row)
 
         # 3. Admin用メニュー (仕事追加ボタン)
         if EconomyService.is_admin(user_id):
             contents.append({"type": "separator", "margin": "md"})
-            contents.append(
-                {
-                    "type": "button",
-                    "style": "link",
-                    "margin": "md",
-                    "action": {
-                        "type": "uri",
-                        "label": "➕ 新しい仕事を追加",
-                        "uri": "https://docs.google.com/forms/u/0/",
-                    },
-                }
-            )
+            # GoogleフォームのURLを設定してください
+            form_url = "https://docs.google.com/forms/d/e/1FAIpQLSclo5UBPPyzLBuY1mukZfDOn7wEWt6fLNIdkQVPAL9IZxSTsQ/viewform?usp=header"
+            button = load_template("job_create_button.json", form_url=form_url)
+            contents.append(button)
 
-        job_flex = {
-            "type": "bubble",
-            "header": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": "🛠 お手伝いボード",
-                        "weight": "bold",
-                        "size": "xl",
-                    }
-                ],
-            },
-            "body": {"type": "box", "layout": "vertical", "contents": contents},
-        }
         line_bot_api.reply_message(
             event.reply_token,
             FlexSendMessage(alt_text="お手伝いリスト", contents=job_flex),
@@ -612,57 +606,14 @@ def handle_message(event):
             return
 
         # 商品カタログFlex Messageを作成
-        items_contents = []
-        for key, item in shop_items.items():
-            row = {
-                "type": "box",
-                "layout": "horizontal",
-                "margin": "md",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": item["name"],
-                        "flex": 3,
-                        "gravity": "center",
-                    },
-                    {
-                        "type": "text",
-                        "text": f"{item['cost']} EXP",
-                        "flex": 1,
-                        "align": "end",
-                        "gravity": "center",
-                        "color": "#27ACB2",
-                    },
-                    {
-                        "type": "button",
-                        "action": {
-                            "type": "postback",
-                            "label": "購入",
-                            "data": f"action=buy&item={key}",
-                        },
-                        "style": "primary",
-                        "flex": 2,
-                    },
-                ],
-            }
-            items_contents.append(row)
+        shop_flex = load_template("shop_list.json")
+        items_contents = shop_flex["body"]["contents"]
 
-        shop_flex = {
-            "type": "bubble",
-            "header": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                    {
-                        "type": "text",
-                        "text": "🛒 EXPショップ",
-                        "weight": "bold",
-                        "size": "xl",
-                    }
-                ],
-            },
-            "body": {"type": "box", "layout": "vertical", "contents": items_contents},
-        }
+        for key, item in shop_items.items():
+            row = load_template(
+                "shop_row.json", name=item["name"], cost=item["cost"], key=key
+            )
+            items_contents.append(row)
 
         line_bot_api.reply_message(
             event.reply_token,

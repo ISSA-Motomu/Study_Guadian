@@ -1,0 +1,20 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "🛠 お手伝いボード",
+        "weight": "bold",
+        "size": "xl"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": []
+  }
+}

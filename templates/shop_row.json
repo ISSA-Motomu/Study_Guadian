@@ -1,0 +1,31 @@
+{
+  "type": "box",
+  "layout": "horizontal",
+  "margin": "md",
+  "contents": [
+    {
+      "type": "text",
+      "text": "${name}",
+      "flex": 3,
+      "gravity": "center"
+    },
+    {
+      "type": "text",
+      "text": "${cost} EXP",
+      "flex": 1,
+      "align": "end",
+      "gravity": "center",
+      "color": "#27ACB2"
+    },
+    {
+      "type": "button",
+      "action": {
+        "type": "postback",
+        "label": "購入",
+        "data": "action=buy&item=${key}"
+      },
+      "style": "primary",
+      "flex": 2
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "type": "box",
+  "layout": "horizontal",
+  "margin": "sm",
+  "contents": [
+    {
+      "type": "text",
+      "text": "${title}",
+      "flex": 2,
+      "gravity": "center"
+    },
+    {
+      "type": "button",
+      "style": "primary",
+      "flex": 1,
+      "action": {
+        "type": "postback",
+        "label": "完了",
+        "data": "action=job_finish&id=${job_id}"
+      }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "🛒 EXPショップ",
+        "weight": "bold",
+        "size": "xl"
+      }
+    ]
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": []
+  }
+}
