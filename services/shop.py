@@ -1,5 +1,6 @@
 import datetime
 from services.gsheet import GSheetService
+from utils.cache import shop_items_cache, cached
 
 
 class ShopService:
@@ -77,6 +78,7 @@ class ShopService:
             return False
 
     @staticmethod
+    @cached(shop_items_cache)
     def get_items():
         """スプレッドシートから商品リストを取得"""
         sheet = GSheetService.get_worksheet("shop_items")

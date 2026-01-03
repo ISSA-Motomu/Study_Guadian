@@ -1,5 +1,6 @@
 from services.gsheet import GSheetService
 from services.economy import EconomyService
+from utils.cache import job_list_cache, cached
 import datetime
 
 
@@ -23,6 +24,7 @@ class JobService:
             return {}
 
     @staticmethod
+    @cached(job_list_cache)
     def get_open_jobs():
         """募集中(OPEN)のジョブを取得"""
         sheet = GSheetService.get_worksheet("jobs")

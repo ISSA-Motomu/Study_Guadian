@@ -55,11 +55,15 @@ def handle_postback(event, action, data):
             ShopService.create_request(user_id, item_key, item["cost"])
 
             # 親への承認リクエストカードを作成
-            profile = line_bot_api.get_profile(user_id)
+            # profile = line_bot_api.get_profile(user_id) # 仮想ユーザーの場合エラーになるため廃止
+            user_info = EconomyService.get_user_info(user_id)
+            user_name = (
+                user_info.get("display_name", "Unknown") if user_info else "Unknown"
+            )
 
             approval_flex = load_template(
                 "approval_request.json",
-                user_name=profile.display_name,
+                user_name=user_name,
                 item_name=item["name"],
                 item_cost=item["cost"],
                 new_balance=new_balance,
@@ -67,16 +71,41 @@ def handle_postback(event, action, data):
                 item_key=item_key,
             )
 
+            # 管理者(親)に通知を送る
+            admins = EconomyService.get_admin_users()
+            admin_notified = False
+            for admin in admins:
+                admin_uid = str(admin.get("user_id"))
+                # 仮想ユーザーでなければプッシュ通知 (自分自身がAdminの場合は自分にも届く)
+                if not admin_uid.startswith("U_virtual_"):
+                    try:
+                        line_bot_api.push_message(
+                            admin_uid,
+                            FlexSendMessage(
+                                alt_text="承認リクエスト", contents=approval_flex
+                            ),
+                        )
+                        admin_notified = True
+                    except Exception as e:
+                        print(f"Push Error to {admin_uid}: {e}")
+
             # 購入者へのメッセージ
-            line_bot_api.reply_message(
-                event.reply_token,
-                [
+            reply_msgs = [
+                TextSendMessage(
+                    text=f"[ポイント交換申請]\n✅ {item['name']} を申請しました。\n(残高: {new_balance} pt)\n親の承認をお待ちください..."
+                )
+            ]
+
+            # Adminが見つからない、または通知できなかった場合のフォールバック
+            # (開発環境などでAdminがいない場合、申請者が確認できないと困るため)
+            if not admin_notified:
+                reply_msgs.append(
                     TextSendMessage(
-                        text=f"[ポイント交換申請]\n✅ {item['name']} を申請しました。\n(残高: {new_balance} pt)\n親の承認をお待ちください..."
-                    ),
-                    FlexSendMessage(alt_text="承認リクエスト", contents=approval_flex),
-                ],
-            )
+                        text="※管理者が見つからないため、通知されませんでした。"
+                    )
+                )
+
+            line_bot_api.reply_message(event.reply_token, reply_msgs)
         else:
             line_bot_api.reply_message(
                 event.reply_token,
