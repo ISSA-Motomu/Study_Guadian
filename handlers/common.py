@@ -231,6 +231,15 @@ def handle_message(event, text):
     if state == "WAITING_NAME":
         # 名前入力待ち
         display_name = text.strip()
+
+        # 「ヘルプ」などのコマンドが入力された場合は、名前として登録せずにスルーする
+        # (ユーザーが間違ってコマンドを打った場合や、システムが誤認した場合の対策)
+        if display_name in ["ヘルプ", "help", "使い方", "説明", "コマンド"]:
+            # 状態をリセットしてFalseを返すことで、後続のヘルプハンドラなどに処理を委譲する
+            # ただし、未登録状態なのでヘルプハンドラ側でどう扱うかは注意が必要
+            # ここでは「名前入力待ち」を維持しつつ、ヘルプを表示させるためにFalseを返す
+            return False
+
         if len(display_name) > 10:
             line_bot_api.reply_message(
                 event.reply_token,
