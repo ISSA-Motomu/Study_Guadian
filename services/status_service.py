@@ -424,28 +424,75 @@ class StatusService:
             },
             "footer": {
                 "type": "box",
-                "layout": "horizontal",
+                "layout": "vertical",
                 "spacing": "sm",
                 "contents": [
                     {
-                        "type": "button",
-                        "style": "secondary",
-                        "height": "sm",
-                        "action": {
-                            "type": "postback",
-                            "label": "履歴",
-                            "data": "action=show_history",
-                        },
+                        "type": "box",
+                        "layout": "horizontal",
+                        "spacing": "sm",
+                        "contents": [
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "height": "sm",
+                                "action": {
+                                    "type": "message",
+                                    "label": "勉強",
+                                    "text": "勉強開始",
+                                },
+                                "color": "#4D96FF",
+                            },
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "height": "sm",
+                                "action": {
+                                    "type": "message",
+                                    "label": "ショップ",
+                                    "text": "ショップ",
+                                },
+                                "color": "#FFD93D",
+                            },
+                            {
+                                "type": "button",
+                                "style": "primary",
+                                "height": "sm",
+                                "action": {
+                                    "type": "message",
+                                    "label": "ガチャ",
+                                    "text": "ガチャ",
+                                },
+                                "color": "#FF6B6B",
+                            },
+                        ],
                     },
                     {
-                        "type": "button",
-                        "style": "secondary",
-                        "height": "sm",
-                        "action": {
-                            "type": "postback",
-                            "label": "掲載中のジョブ",
-                            "data": "action=job_list",
-                        },
+                        "type": "box",
+                        "layout": "horizontal",
+                        "spacing": "sm",
+                        "contents": [
+                            {
+                                "type": "button",
+                                "style": "secondary",
+                                "height": "sm",
+                                "action": {
+                                    "type": "postback",
+                                    "label": "履歴",
+                                    "data": "action=show_history",
+                                },
+                            },
+                            {
+                                "type": "button",
+                                "style": "secondary",
+                                "height": "sm",
+                                "action": {
+                                    "type": "postback",
+                                    "label": "掲載中のジョブ",
+                                    "data": "action=job_list",
+                                },
+                            },
+                        ],
                     },
                 ],
             },
