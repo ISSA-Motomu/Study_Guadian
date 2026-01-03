@@ -13,6 +13,7 @@ from services.stats import SagaStats
 from services.history import HistoryService
 from services.status_service import StatusService
 from utils.template_loader import load_template
+from handlers import common
 
 # 簡易的な状態管理 (メモリ上)
 user_states = {}
@@ -28,12 +29,14 @@ SUBJECT_COLORS = {
 
 
 def handle_postback(event, action, data):
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
+    user_id = common.get_current_user_id(line_user_id)
 
     if action == "start_study":
         try:
-            profile = line_bot_api.get_profile(user_id)
-            user_name = profile.display_name
+            # ユーザー名解決 (なりすまし対応)
+            user_info = EconomyService.get_user_info(user_id)
+            user_name = user_info["display_name"] if user_info else "User"
         except:
             user_name = "User"
 
@@ -113,8 +116,8 @@ def handle_postback(event, action, data):
         # But we need subject from data.
 
         try:
-            profile = line_bot_api.get_profile(user_id)
-            user_name = profile.display_name
+            user_info = EconomyService.get_user_info(user_id)
+            user_name = user_info["display_name"] if user_info else "User"
         except:
             user_name = "User"
 
@@ -288,6 +291,8 @@ def handle_postback(event, action, data):
                 line_bot_api.push_message(target_id, messages)
             except Exception as e:
                 print(f"Pushエラー: {e}")
+                # 仮想ユーザーIDの場合、Pushは失敗するが、それは仕様として許容する
+                # (LINE IDではないため)
         else:
             line_bot_api.reply_message(
                 event.reply_token,
@@ -402,8 +407,9 @@ def finalize_study(event, user_id, state_data, concentration):
 
     # Adminへの通知
     try:
-        profile = line_bot_api.get_profile(user_id)
-        user_name = profile.display_name
+        user_info = EconomyService.get_user_info(user_id)
+        user_name = user_info["display_name"] if user_info else "User"
+
         admins = EconomyService.get_admin_users()
         admin_ids = [u["user_id"] for u in admins if u.get("user_id")]
 

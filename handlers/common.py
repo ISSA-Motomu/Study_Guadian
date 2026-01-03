@@ -2,13 +2,216 @@ from linebot.models import TextSendMessage, FlexSendMessage
 from bot_instance import line_bot_api
 from services.economy import EconomyService
 from utils.template_loader import load_template
+import random
 
 # 簡易的な状態管理
 user_states = {}
 
+# ユーザーセッション管理 (LINE User ID -> App User ID)
+# { "U_line_id": "U_app_user_id" }
+ACTIVE_SESSIONS = {}
+
+
+def get_current_user_id(line_user_id):
+    """現在の操作ユーザーIDを取得（なりすまし対応）"""
+    return ACTIVE_SESSIONS.get(line_user_id, line_user_id)
+
+
+def switch_user(line_user_id, target_user_id):
+    """操作ユーザーを切り替え"""
+    ACTIVE_SESSIONS[line_user_id] = target_user_id
+
+
+def handle_postback(event, action, data):
+    line_user_id = event.source.user_id
+
+    if action == "switch_user_menu":
+        # ユーザー切り替えメニューを表示
+        users = EconomyService.get_all_users()
+
+        # 自分自身（LINE ID）も選択肢に含める
+        # usersリストには既に含まれているはずだが、表示名をわかりやすくする
+
+        bubbles = []
+        for u in users:
+            uid = str(u.get("user_id"))
+            name = u.get("display_name")
+            role = u.get("role")
+
+            # 現在選択中のユーザーかどうか
+            current_uid = get_current_user_id(line_user_id)
+            is_active = uid == current_uid
+
+            bg_color = "#E0F7FA" if is_active else "#FFFFFF"
+            status_text = "選択中" if is_active else "切替"
+            status_color = "#00BCD4" if is_active else "#aaaaaa"
+
+            bubble = {
+                "type": "bubble",
+                "size": "micro",
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "backgroundColor": bg_color,
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": name,
+                            "weight": "bold",
+                            "size": "sm",
+                            "wrap": True,
+                        },
+                        {
+                            "type": "text",
+                            "text": f"Role: {role}",
+                            "size": "xxs",
+                            "color": "#aaaaaa",
+                        },
+                    ],
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "action": {
+                                "type": "postback",
+                                "label": status_text,
+                                "data": f"action=do_switch_user&target={uid}",
+                            },
+                            "style": "secondary" if is_active else "primary",
+                            "height": "sm",
+                            "color": status_color if is_active else None,
+                        }
+                    ],
+                },
+            }
+            bubbles.append(bubble)
+
+        # 新規ユーザー作成ボタン
+        add_user_bubble = {
+            "type": "bubble",
+            "size": "micro",
+            "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": "＋ 新規追加",
+                        "weight": "bold",
+                        "size": "sm",
+                        "align": "center",
+                        "color": "#444444",
+                    },
+                    {
+                        "type": "text",
+                        "text": "LINEなしユーザー",
+                        "size": "xxs",
+                        "color": "#aaaaaa",
+                        "align": "center",
+                    },
+                ],
+                "justifyContent": "center",
+                "height": "60px",
+            },
+            "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                    {
+                        "type": "button",
+                        "action": {
+                            "type": "postback",
+                            "label": "作成",
+                            "data": "action=create_new_user_flow",
+                        },
+                        "height": "sm",
+                    }
+                ],
+            },
+        }
+        bubbles.append(add_user_bubble)
+
+        carousel = {"type": "carousel", "contents": bubbles}
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            FlexSendMessage(alt_text="ユーザー切替", contents=carousel),
+        )
+        return True
+
+    elif action == "do_switch_user":
+        target_uid = data.get("target")
+        user_info = EconomyService.get_user_info(target_uid)
+        name = user_info.get("display_name") if user_info else target_uid
+
+        switch_user(line_user_id, target_uid)
+
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=f"ユーザーを「{name}」に切り替えました。"),
+        )
+        return True
+
+    elif action == "create_new_user_flow":
+        # 新規ユーザー作成フロー開始
+        user_states[line_user_id] = "WAITING_NEW_USER_NAME"
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="新しく追加するユーザーの名前を入力してください。"),
+        )
+        return True
+
+    return False
+
 
 def handle_message(event, text):
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
+
+    # 新規ユーザー作成フロー
+    state = user_states.get(line_user_id)
+    if state == "WAITING_NEW_USER_NAME":
+        new_name = text.strip()
+        if len(new_name) > 10:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="名前が長すぎます。10文字以内で入力してください。"
+                ),
+            )
+            return True
+
+        # 仮想ID生成 (U_virtual_timestamp)
+        import time
+
+        virtual_id = f"U_virtual_{int(time.time())}_{random.randint(100, 999)}"
+
+        if EconomyService.register_user(virtual_id, new_name):
+            EconomyService.add_exp(virtual_id, 500, "WELCOME_BONUS")
+
+            # 自動的に切り替え
+            switch_user(line_user_id, virtual_id)
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=f"ユーザー「{new_name}」を作成し、切り替えました！"
+                ),
+            )
+            if line_user_id in user_states:
+                del user_states[line_user_id]
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="作成に失敗しました。")
+            )
+        return True
+
+    # --- 以下、既存ロジック ---
+
+    # 現在の操作ユーザーIDを取得
+    user_id = get_current_user_id(line_user_id)
 
     # 既存ユーザーかチェック
     # (毎回APIを叩くのはコストが高いが、現状のアーキテクチャでは許容)
@@ -19,7 +222,10 @@ def handle_message(event, text):
         return False
 
     # --- 未登録ユーザーのオンボーディング処理 ---
-    state = user_states.get(user_id)
+    # ここに来るのは「LINE IDそのもの」が未登録の場合のみ
+    # (仮想ユーザーに切り替えている場合は user_info があるはずなのでここには来ない)
+
+    state = user_states.get(line_user_id)
 
     if state == "WAITING_NAME":
         # 名前入力待ち
@@ -33,10 +239,10 @@ def handle_message(event, text):
             )
             return True
 
-        # 登録処理
-        if EconomyService.register_user(user_id, display_name):
+        # 登録処理 (LINE IDで登録)
+        if EconomyService.register_user(line_user_id, display_name):
             # 初回ボーナス付与
-            EconomyService.add_exp(user_id, 500, "WELCOME_BONUS")
+            EconomyService.add_exp(line_user_id, 500, "WELCOME_BONUS")
 
             welcome_flex = load_template("welcome_success.json", name=display_name)
             if welcome_flex:
@@ -53,8 +259,8 @@ def handle_message(event, text):
                 )
 
             # 状態クリア
-            if user_id in user_states:
-                del user_states[user_id]
+            if line_user_id in user_states:
+                del user_states[line_user_id]
         else:
             line_bot_api.reply_message(
                 event.reply_token,
@@ -64,7 +270,7 @@ def handle_message(event, text):
 
     else:
         # 初回接触（または未登録状態での発言）
-        user_states[user_id] = "WAITING_NAME"
+        user_states[line_user_id] = "WAITING_NAME"
 
         onboarding_flex = load_template("welcome_onboarding.json")
         if onboarding_flex:

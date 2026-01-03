@@ -3,6 +3,7 @@ from bot_instance import line_bot_api
 from services.job import JobService
 from services.economy import EconomyService
 from utils.template_loader import load_template
+from handlers import common
 
 
 def send_job_list(reply_token, user_id):
@@ -70,7 +71,8 @@ def send_job_list(reply_token, user_id):
 
 
 def handle_postback(event, action, data):
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
+    user_id = common.get_current_user_id(line_user_id)
 
     if action == "job_list":
         send_job_list(event.reply_token, user_id)
@@ -102,8 +104,9 @@ def handle_postback(event, action, data):
 
             # Adminへの通知
             try:
-                profile = line_bot_api.get_profile(user_id)
-                user_name = profile.display_name
+                user_info = EconomyService.get_user_info(user_id)
+                user_name = user_info["display_name"] if user_info else "User"
+
                 admins = EconomyService.get_admin_users()
                 admin_ids = [u["user_id"] for u in admins if u.get("user_id")]
 
@@ -128,10 +131,15 @@ def handle_postback(event, action, data):
 
         if success:
             # 親への承認依頼
-            profile = line_bot_api.get_profile(user_id)
+            try:
+                user_info = EconomyService.get_user_info(user_id)
+                user_name = user_info["display_name"] if user_info else "User"
+            except:
+                user_name = "User"
+
             approve_flex = load_template(
                 "job_approve_request.json",
-                user_name=profile.display_name,
+                user_name=user_name,
                 job_title=result["title"],
                 job_reward=result["reward"],
                 job_id=job_id,

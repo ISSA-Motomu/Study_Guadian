@@ -3,10 +3,12 @@ from bot_instance import line_bot_api
 from services.shop import ShopService
 from services.economy import EconomyService
 from utils.template_loader import load_template
+from handlers import common
 
 
 def handle_postback(event, action, data):
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
+    user_id = common.get_current_user_id(line_user_id)
 
     if action == "buy":
         item_key = data.get("item")

@@ -4,10 +4,12 @@ from services.economy import EconomyService
 from services.history import HistoryService
 from services.status_service import StatusService
 from utils.template_loader import load_template
+from handlers import common
 
 
 def handle_postback(event, action, data):
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
+    user_id = common.get_current_user_id(line_user_id)
 
     if action == "show_history":
         # ユーザー自身の履歴を表示
@@ -84,7 +86,8 @@ def handle_postback(event, action, data):
 
 
 def handle_message(event, text):
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
+    user_id = common.get_current_user_id(line_user_id)
 
     if text in ["状況", "ステータス", "status", "詳細ステータス"]:
         # 1. Adminかどうかチェック

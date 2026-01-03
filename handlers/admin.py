@@ -7,6 +7,7 @@ from services.approval import ApprovalService
 from services.shop import ShopService
 from services.job import JobService
 from utils.template_loader import load_template
+from handlers import common
 
 
 # 管理者の操作状態を保持する辞書
@@ -16,7 +17,8 @@ admin_states = {}
 
 def handle_postback(event, action, data):
     """管理機能のPostback処理"""
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
+    user_id = common.get_current_user_id(line_user_id)
 
     # 管理者チェック
     if not EconomyService.is_admin(user_id):
@@ -26,7 +28,7 @@ def handle_postback(event, action, data):
         target_user_id = data.get("target_id")
         amount = int(data.get("amount"))
 
-        admin_states[user_id] = {
+        admin_states[line_user_id] = {
             "state": "WAITING_REASON",
             "target_user_id": target_user_id,
             "amount": amount,
@@ -43,7 +45,7 @@ def handle_postback(event, action, data):
     elif action == "admin_give_exp_custom":
         target_user_id = data.get("target_id")
 
-        admin_states[user_id] = {
+        admin_states[line_user_id] = {
             "state": "WAITING_AMOUNT",
             "target_user_id": target_user_id,
         }
@@ -92,7 +94,8 @@ def handle_postback(event, action, data):
 
 def handle_message(event, text):
     try:
-        user_id = event.source.user_id
+        line_user_id = event.source.user_id
+        user_id = common.get_current_user_id(line_user_id)
 
         # 開発用リセットコマンド
         if text == "!reset" or text == "!init":
@@ -112,8 +115,8 @@ def handle_message(event, text):
                 return True
 
         # 状態チェック (ポイント付与フロー中かどうか)
-        if user_id in admin_states:
-            state_data = admin_states[user_id]
+        if line_user_id in admin_states:
+            state_data = admin_states[line_user_id]
             state = state_data.get("state")
 
             if state == "WAITING_AMOUNT":
@@ -121,7 +124,7 @@ def handle_message(event, text):
                     amount = int(text)
                     state_data["amount"] = amount
                     state_data["state"] = "WAITING_REASON"
-                    admin_states[user_id] = state_data  # 更新
+                    admin_states[line_user_id] = state_data  # 更新
 
                     line_bot_api.reply_message(
                         event.reply_token,
@@ -151,7 +154,7 @@ def handle_message(event, text):
                 )
 
                 # 状態クリア
-                del admin_states[user_id]
+                del admin_states[line_user_id]
 
                 if result is False:
                     line_bot_api.reply_message(

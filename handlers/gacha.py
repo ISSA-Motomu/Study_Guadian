@@ -4,10 +4,12 @@ from bot_instance import line_bot_api
 from services.economy import EconomyService
 from services.history import HistoryService
 from services.status_service import StatusService
+from handlers import common
 
 
 def handle_message(event, text):
-    user_id = event.source.user_id
+    line_user_id = event.source.user_id
+    user_id = common.get_current_user_id(line_user_id)
 
     if text == "ガチャ":
         # 0. ランク確認 (Rank Eは不可)

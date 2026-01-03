@@ -492,6 +492,17 @@ class StatusService:
                                     "data": "action=job_list",
                                 },
                             },
+                            {
+                                "type": "button",
+                                "style": "secondary",
+                                "height": "sm",
+                                "action": {
+                                    "type": "postback",
+                                    "label": "切替",
+                                    "data": "action=switch_user_menu",
+                                },
+                                "color": "#90A4AE",
+                            },
                         ],
                     },
                 ],
