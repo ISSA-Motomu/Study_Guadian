@@ -98,6 +98,8 @@ def handle_postback(event):
         return
     if shop.handle_postback(event, action, data):
         return
+    if admin.handle_postback(event, action, data):
+        return
     if job.handle_postback(event, action, data):
         return
 
