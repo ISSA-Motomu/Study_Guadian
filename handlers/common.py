@@ -1,6 +1,7 @@
-from linebot.models import TextSendMessage
+from linebot.models import TextSendMessage, FlexSendMessage
 from bot_instance import line_bot_api
 from services.economy import EconomyService
+from utils.template_loader import load_template
 
 # 簡易的な状態管理
 user_states = {}
@@ -37,12 +38,20 @@ def handle_message(event, text):
             # 初回ボーナス付与
             EconomyService.add_exp(user_id, 500, "WELCOME_BONUS")
 
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(
-                    text=f"ようこそ、{display_name}さん！\n登録完了ボーナスとして 500 EXP をプレゼントしました！\n\nまずは「ヘルプ」と入力して使い方を見てみてね。"
-                ),
-            )
+            welcome_flex = load_template("welcome_success.json", name=display_name)
+            if welcome_flex:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    FlexSendMessage(alt_text="登録完了", contents=welcome_flex),
+                )
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text=f"ようこそ、{display_name}さん！\n登録完了ボーナスとして 500 pt をプレゼントしました！"
+                    ),
+                )
+
             # 状態クリア
             if user_id in user_states:
                 del user_states[user_id]
@@ -56,10 +65,18 @@ def handle_message(event, text):
     else:
         # 初回接触（または未登録状態での発言）
         user_states[user_id] = "WAITING_NAME"
-        line_bot_api.reply_message(
-            event.reply_token,
-            TextSendMessage(
-                text="はじめまして！Study Guardianへようこそ。\n\nまずはあなたの名前を教えてね。\n（呼び名をメッセージで送ってください）"
-            ),
-        )
+
+        onboarding_flex = load_template("welcome_onboarding.json")
+        if onboarding_flex:
+            line_bot_api.reply_message(
+                event.reply_token,
+                FlexSendMessage(alt_text="GAME START", contents=onboarding_flex),
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="はじめまして！Study Guardianへようこそ。\n\nまずはあなたの名前を教えてね。\n（呼び名をメッセージで送ってください）"
+                ),
+            )
         return True

@@ -1,0 +1,80 @@
+{
+  "type": "bubble",
+  "size": "mega",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "🎉 REGISTRATION COMPLETE",
+        "color": "#ffffff",
+        "weight": "bold",
+        "size": "sm"
+      }
+    ],
+    "backgroundColor": "#FF9800",
+    "paddingAll": "15px"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "ようこそ、${name}！",
+        "weight": "bold",
+        "size": "xl",
+        "wrap": true
+      },
+      {
+        "type": "text",
+        "text": "冒険の準備が整いました。",
+        "size": "sm",
+        "color": "#aaaaaa",
+        "margin": "sm"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "margin": "xl",
+        "contents": [
+          {
+            "type": "text",
+            "text": "🎁 初回ログインボーナス",
+            "weight": "bold",
+            "color": "#ff5555",
+            "size": "sm"
+          },
+          {
+            "type": "text",
+            "text": "500 pt",
+            "weight": "bold",
+            "size": "4xl",
+            "color": "#FFD700",
+            "align": "center",
+            "margin": "md"
+          }
+        ],
+        "backgroundColor": "#f8f8f8",
+        "cornerRadius": "md",
+        "paddingAll": "15px"
+      }
+    ]
+  },
+  "footer": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "button",
+        "action": {
+          "type": "message",
+          "label": "使い方を見る",
+          "text": "ヘルプ"
+        },
+        "style": "primary"
+      }
+    ]
+  }
+}
