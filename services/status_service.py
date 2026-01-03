@@ -52,7 +52,7 @@ class StatusService:
         else:
             return {
                 "name": "Rank E: 見習い",
-                "color": "#A9A9A9",
+                "color": "#555555",
                 "next": 180,
                 "base": 0,
                 "img": "rank_e.png",

@@ -17,6 +17,15 @@ from utils.template_loader import load_template
 # 簡易的な状態管理 (メモリ上)
 user_states = {}
 
+SUBJECT_COLORS = {
+    "国語": "#FF6B6B",
+    "数学": "#4D96FF",
+    "英語": "#FFD93D",
+    "理科": "#6BCB77",
+    "社会": "#9D4EDD",
+    "その他": "#95A5A6",
+}
+
 
 def handle_postback(event, action, data):
     user_id = event.source.user_id
@@ -35,11 +44,104 @@ def handle_postback(event, action, data):
         subject = data.get("subject", "")
 
         if GSheetService.log_activity(user_id, user_name, today, current_time, subject):
-            subject_text = f"【{subject}】" if subject else ""
-            reply_text = f"【記録開始】\n{current_time} {subject_text}スタート！\n今日も頑張ってえらい！"
+            # Flex Message for Study Session
+            color = SUBJECT_COLORS.get(subject, "#27ACB2")
+            bubble = load_template(
+                "study_session.json",
+                subject=subject,
+                start_time=current_time,
+                color=color,
+            )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                FlexSendMessage(alt_text="勉強中...", contents=bubble),
+            )
         else:
-            reply_text = "エラー：記録に失敗しました。"
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=reply_text))
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="エラー：記録に失敗しました。")
+            )
+        return True
+
+    elif action == "pause_study":
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        current_time = now.strftime("%H:%M:%S")
+
+        # End current session temporarily
+        result = GSheetService.update_end_time(user_id, current_time)
+        if result:
+            # Calculate duration just for display (optional)
+            # We don't need to do full stats update here, but we should probably log duration
+            # update_end_time sets status to PENDING.
+            # We will leave it as PENDING. The parent will see multiple entries.
+
+            # Calculate minutes for stats
+            start_time_str = result["start_time"]
+            try:
+                start_dt = datetime.datetime.strptime(start_time_str, "%H:%M:%S")
+                end_dt = datetime.datetime.strptime(current_time, "%H:%M:%S")
+                if end_dt < start_dt:
+                    end_dt += datetime.timedelta(days=1)
+                duration = end_dt - start_dt
+                minutes = int(duration.total_seconds() / 60)
+
+                # Update stats (Duration/Rank) so it's not empty in sheet
+                stats = SagaStats.calculate(minutes)
+                if stats:
+                    GSheetService.update_study_stats(
+                        result["row_index"], minutes, stats["rank"]
+                    )
+            except:
+                pass
+
+            subject = result.get("subject", "")
+            bubble = load_template("study_resume.json", subject=subject)
+            line_bot_api.reply_message(
+                event.reply_token, FlexSendMessage(alt_text="一時中断", contents=bubble)
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="勉強中の記録が見つかりません。"),
+            )
+        return True
+
+    elif action == "resume_study":
+        # Same as start_study but maybe different message?
+        # Let's reuse start_study logic but with "Resumed" text if needed.
+        # For simplicity, we just call the same logic as start_study
+        # But we need subject from data.
+
+        try:
+            profile = line_bot_api.get_profile(user_id)
+            user_name = profile.display_name
+        except:
+            user_name = "User"
+
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        today = now.strftime("%Y-%m-%d")
+        current_time = now.strftime("%H:%M:%S")
+
+        subject = data.get("subject", "")
+
+        if GSheetService.log_activity(user_id, user_name, today, current_time, subject):
+            color = SUBJECT_COLORS.get(subject, "#27ACB2")
+            bubble = load_template(
+                "study_session.json",
+                subject=subject,
+                start_time=current_time,
+                color=color,
+            )
+
+            # Change text slightly? No, template is fixed.
+            # We can just send it.
+            line_bot_api.reply_message(
+                event.reply_token, FlexSendMessage(alt_text="勉強再開", contents=bubble)
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="エラー：再開に失敗しました。")
+            )
         return True
 
     elif action == "end_study":

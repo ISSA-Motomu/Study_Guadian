@@ -1,0 +1,60 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "一時中断中: ${subject}",
+        "weight": "bold",
+        "size": "lg",
+        "color": "#ffffff"
+      }
+    ],
+    "backgroundColor": "#777777",
+    "paddingAll": "15px"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "休憩中...",
+        "size": "md",
+        "align": "center",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "再開するときはボタンを押してね",
+        "size": "sm",
+        "color": "#aaaaaa",
+        "align": "center",
+        "margin": "sm"
+      },
+      {
+        "type": "separator",
+        "margin": "lg"
+      },
+      {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "勉強再開",
+              "data": "action=resume_study&subject=${subject}"
+            },
+            "style": "primary",
+            "margin": "md"
+          }
+        ],
+        "margin": "lg"
+      }
+    ]
+  }
+}

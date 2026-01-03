@@ -1,0 +1,71 @@
+{
+  "type": "bubble",
+  "header": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "勉強中: ${subject}",
+        "weight": "bold",
+        "size": "lg",
+        "color": "#ffffff"
+      }
+    ],
+    "backgroundColor": "${color}",
+    "paddingAll": "15px"
+  },
+  "body": {
+    "type": "box",
+    "layout": "vertical",
+    "contents": [
+      {
+        "type": "text",
+        "text": "開始時間: ${start_time}",
+        "size": "md",
+        "align": "center",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "今日も頑張ってえらい！",
+        "size": "sm",
+        "color": "#aaaaaa",
+        "align": "center",
+        "margin": "lg"
+      },
+      {
+        "type": "separator",
+        "margin": "lg"
+      },
+      {
+        "type": "box",
+        "layout": "horizontal",
+        "contents": [
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "一時中断",
+              "data": "action=pause_study"
+            },
+            "style": "secondary",
+            "margin": "xs",
+            "color": "#FFD93D"
+          },
+          {
+            "type": "button",
+            "action": {
+              "type": "postback",
+              "label": "勉強終了",
+              "data": "action=end_study"
+            },
+            "style": "primary",
+            "margin": "xs"
+          }
+        ],
+        "margin": "lg"
+      }
+    ]
+  }
+}
