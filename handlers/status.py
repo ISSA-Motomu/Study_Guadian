@@ -123,12 +123,37 @@ def handle_message(event, text):
                         else str(tx.get("user_id"))[:4]
                     )
 
+                    # トランザクションタイプを日本語化
+                    tx_type_raw = str(tx.get("tx_type", "")).upper()
+                    tx_type_map = {
+                        "STUDY_REWARD": "勉強報酬",
+                        "JOB_REWARD": "お手伝い",
+                        "BUY_ITEM": "買い物",
+                        "ADMIN_GRANT": "特別付与",
+                        "ADMIN_ADJUST": "残高修正",
+                        "REFUND": "返金",
+                        "LOGIN_BONUS": "ログボ",
+                    }
+                    # JOB_job_12345 のようなパターンに対応
+                    if tx_type_raw.startswith("JOB_"):
+                        tx_type_label = "お手伝い"
+                    elif tx_type_raw.startswith("BUY_"):
+                        tx_type_label = "買い物"
+                    else:
+                        tx_type_label = tx_type_map.get(tx_type_raw, tx_type_raw)
+
+                    # related_id に理由が入っている場合 (ADMIN_GRANT:理由)
+                    related_id = str(tx.get("related_id", ""))
+                    if tx_type_raw == "ADMIN_GRANT" and ":" in related_id:
+                        tx_type_label = related_id.split(":", 1)[1]
+
                     row = load_template(
                         "status_row_transaction.json",
                         date=str(tx.get("timestamp"))[5:-3],  # MM-DD HH:MM
                         user=user_name,
                         amount=amount_str,
                         color=color,
+                        type=tx_type_label[:8],  # 長すぎると崩れるのでカット
                     )
                     list_container.append(row)
 

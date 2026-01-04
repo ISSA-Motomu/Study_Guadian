@@ -281,7 +281,7 @@ def handle_postback(event, action, data):
                 messages = []
                 messages.append(
                     TextSendMessage(
-                        text=f"💮 勉強時間が承認されました！\n+{minutes} EXP\n(現在残高: {new_balance} EXP)"
+                        text=f"💮 勉強時間が承認されました！\n承認者：{approver_name}\n+{minutes} EXP\n(現在残高: {new_balance} EXP)"
                     )
                 )
 

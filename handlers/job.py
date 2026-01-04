@@ -211,6 +211,17 @@ def handle_postback(event, action, data):
                     text=f"💮 {worker_name}さんの「{result['title']}」を承認しました！\n承認者：{approver_name}\n\n報酬 {result['reward']} EXP を付与しました。\n(現在残高: {result['balance']} EXP)"
                 ),
             )
+
+            # 対象ユーザーへ通知
+            try:
+                line_bot_api.push_message(
+                    worker_id,
+                    TextSendMessage(
+                        text=f"🧹 お手伝い「{result['title']}」が承認されました！\n承認者：{approver_name}\n+{result['reward']} EXP\n(現在残高: {result['balance']} EXP)"
+                    ),
+                )
+            except:
+                pass
         else:
             line_bot_api.reply_message(
                 event.reply_token, TextSendMessage(text=f"エラー: {result}")
