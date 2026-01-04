@@ -236,3 +236,28 @@ class JobService:
             }
         except Exception as e:
             return False, str(e)
+
+    @staticmethod
+    def reject_job(job_id):
+        """ジョブ却下（ステータスをASSIGNEDに戻す）"""
+        sheet = GSheetService.get_worksheet("jobs")
+        if not sheet:
+            return False, "シートエラー"
+
+        try:
+            cell = sheet.find(str(job_id))
+            if not cell:
+                return False, "ジョブが見つかりません"
+
+            row = cell.row
+            status = sheet.cell(row, 4).value
+            if status != "REVIEW":
+                return False, "承認待ちではありません"
+
+            # 更新: Status=ASSIGNED
+            sheet.update_cell(row, 4, "ASSIGNED")
+
+            title = sheet.cell(row, 2).value
+            return True, title
+        except Exception as e:
+            return False, str(e)

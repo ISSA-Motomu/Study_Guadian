@@ -53,6 +53,16 @@
           "label": "承認",
           "data": "action=job_approve&row_id=${row_index}&target=${user_id}&amount=${reward}"
         }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "margin": "sm",
+        "action": {
+          "type": "postback",
+          "label": "却下",
+          "data": "action=job_reject&job_id=${row_index}&target=${user_id}"
+        }
       }
     ]
   }

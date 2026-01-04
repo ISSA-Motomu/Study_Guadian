@@ -30,6 +30,9 @@ shop_items_cache = SimpleCache(ttl=600)
 # ジョブリストはステータスが変わるので短め (1分)
 job_list_cache = SimpleCache(ttl=60)
 
+# ユーザーの状態管理 (5分)
+user_state_cache = SimpleCache(ttl=300)
+
 
 def cached(cache_instance, key_func=None):
     """

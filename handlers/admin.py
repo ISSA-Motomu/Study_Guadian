@@ -1,6 +1,12 @@
 import datetime
 import traceback
-from linebot.models import TextSendMessage, FlexSendMessage
+from linebot.models import (
+    TextSendMessage,
+    FlexSendMessage,
+    QuickReply,
+    QuickReplyButton,
+    PostbackAction,
+)
 from bot_instance import line_bot_api
 from services.economy import EconomyService
 from services.approval import ApprovalService
@@ -89,6 +95,30 @@ def handle_postback(event, action, data):
             )
         return True
 
+    elif action == "prompt_grant":
+        target_id = data.get("target")
+        admin_states[line_user_id] = {
+            "state": "WAITING_GRANT_AMOUNT",
+            "data": {"target": target_id},
+        }
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="付与するポイント数を入力してください。"),
+        )
+        return True
+
+    elif action == "prompt_edit":
+        target_id = data.get("target")
+        admin_states[line_user_id] = {
+            "state": "WAITING_EDIT_AMOUNT",
+            "data": {"target": target_id},
+        }
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="新しいポイント残高を入力してください。"),
+        )
+        return True
+
     return False
 
 
@@ -96,6 +126,73 @@ def handle_message(event, text):
     try:
         line_user_id = event.source.user_id
         user_id = common.get_current_user_id(line_user_id)
+
+        # 状態管理チェック
+        if line_user_id in admin_states:
+            state = admin_states[line_user_id]
+            if text == "キャンセル":
+                del admin_states[line_user_id]
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(text="操作をキャンセルしました。"),
+                )
+                return True
+
+            if state["state"] == "WAITING_GRANT_AMOUNT":
+                try:
+                    amount = int(text)
+                    target_id = state["data"]["target"]
+                    EconomyService.add_exp(target_id, amount, "ADMIN_GRANT")
+                    del admin_states[line_user_id]
+
+                    target_info = EconomyService.get_user_info(target_id)
+                    name = target_info.get("display_name", "ユーザー")
+
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(
+                            text=f"{name}さんに {amount} pt を付与しました。"
+                        ),
+                    )
+                    return True
+                except ValueError:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(
+                            text="数字を入力してください。キャンセルするには「キャンセル」と入力してください。"
+                        ),
+                    )
+                    return True
+
+            elif state["state"] == "WAITING_EDIT_AMOUNT":
+                try:
+                    amount = int(text)
+                    target_id = state["data"]["target"]
+                    current = EconomyService.get_user_info(target_id).get(
+                        "current_exp", 0
+                    )
+                    diff = amount - current
+                    EconomyService.add_exp(target_id, diff, "ADMIN_ADJUST")
+                    del admin_states[line_user_id]
+
+                    target_info = EconomyService.get_user_info(target_id)
+                    name = target_info.get("display_name", "ユーザー")
+
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(
+                            text=f"{name}さんの残高を {amount} pt に修正しました。"
+                        ),
+                    )
+                    return True
+                except ValueError:
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(
+                            text="数字を入力してください。キャンセルするには「キャンセル」と入力してください。"
+                        ),
+                    )
+                    return True
 
         # 開発用リセットコマンド
         if text == "!reset" or text == "!init":
@@ -190,6 +287,10 @@ def handle_message(event, text):
                     "  (Googleフォームへのリンク)\n"
                     "・勲章授与 / バッジ\n"
                     "  (ユーザー選択→バッジ選択)\n"
+                    "・ポイント付与\n"
+                    "  (ユーザー選択→ポイント入力)\n"
+                    "・ポイント修正\n"
+                    "  (ユーザー選択→残高修正)\n"
                     "・!reset / !init\n"
                     "  (自分自身のデータをリセット)\n\n"
                     "【確認機能】\n"
@@ -207,6 +308,58 @@ def handle_message(event, text):
                     event.reply_token, TextSendMessage(text=help_text)
                 )
                 return True
+
+        if text == "ポイント付与":
+            if not EconomyService.is_admin(user_id):
+                return True
+
+            users = EconomyService.get_all_users()
+            items = []
+            for u in users:
+                label = u.get("display_name", "Unknown")[:20]
+                uid = u.get("user_id")
+                items.append(
+                    QuickReplyButton(
+                        action=PostbackAction(
+                            label=label, data=f"action=prompt_grant&target={uid}"
+                        )
+                    )
+                )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="誰にポイントを付与しますか？",
+                    quick_reply=QuickReply(items=items),
+                ),
+            )
+            return True
+
+        if text == "ポイント修正":
+            if not EconomyService.is_admin(user_id):
+                return True
+
+            users = EconomyService.get_all_users()
+            items = []
+            for u in users:
+                label = u.get("display_name", "Unknown")[:20]
+                uid = u.get("user_id")
+                items.append(
+                    QuickReplyButton(
+                        action=PostbackAction(
+                            label=label, data=f"action=prompt_edit&target={uid}"
+                        )
+                    )
+                )
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text="誰のポイントを修正しますか？",
+                    quick_reply=QuickReply(items=items),
+                ),
+            )
+            return True
 
         if text.startswith("タスク追加"):
             if not EconomyService.is_admin(user_id):

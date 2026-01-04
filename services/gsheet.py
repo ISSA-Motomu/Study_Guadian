@@ -173,3 +173,20 @@ class GSheetService:
             return True
         except:
             return False
+
+    @staticmethod
+    def reject_study(row_index):
+        """学習記録を却下（REJECTED）に更新"""
+        sheet = GSheetService.get_worksheet("study_log")
+        if not sheet:
+            return False
+        try:
+            # 既に承認済みかチェック (F列=6)
+            current_status = sheet.cell(row_index, 6).value
+            if current_status == "APPROVED":
+                return False
+
+            sheet.update_cell(row_index, 6, "REJECTED")
+            return True
+        except:
+            return False

@@ -159,6 +159,29 @@ def handle_postback(event, action, data):
             )
         return True
 
+    elif action == "job_reject":
+        if not EconomyService.is_admin(user_id):
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="権限がありません")
+            )
+            return True
+
+        job_id = data.get("job_id") or data.get("row_id")
+        success, result = JobService.reject_job(job_id)
+
+        if success:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=f"「{result}」を却下しました。（ステータスをASSIGNEDに戻しました）"
+                ),
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text=f"エラー: {result}")
+            )
+        return True
+
     elif action == "job_approve":
         if not EconomyService.is_admin(user_id):
             line_bot_api.reply_message(

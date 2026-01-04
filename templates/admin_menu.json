@@ -45,6 +45,28 @@
       {
         "type": "button",
         "action": {
+          "type": "message",
+          "label": "💰 ポイント付与",
+          "text": "ポイント付与"
+        },
+        "style": "secondary",
+        "margin": "md",
+        "height": "sm"
+      },
+      {
+        "type": "button",
+        "action": {
+          "type": "message",
+          "label": "✏️ ポイント修正",
+          "text": "ポイント修正"
+        },
+        "style": "secondary",
+        "margin": "md",
+        "height": "sm"
+      },
+      {
+        "type": "button",
+        "action": {
           "type": "uri",
           "label": "🛍️ 交換アイテム追加 (Form)",
           "uri": "https://docs.google.com/forms/d/e/1FAIpQLSfFxXNFm-xuB4LMbn8Y6ePX4y46Rl0C34ouTzi7qYYuSSOXWg/viewform"

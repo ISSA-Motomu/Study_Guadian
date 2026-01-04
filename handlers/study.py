@@ -204,6 +204,26 @@ def handle_postback(event, action, data):
             )
         return True
 
+    elif action == "study_reject":
+        if not EconomyService.is_admin(user_id):
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="権限がありません")
+            )
+            return True
+
+        target_id = data.get("target")
+        row_id = data.get("row_id")
+
+        if row_id and GSheetService.reject_study(int(row_id)):
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="勉強記録を却下しました。")
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="却下に失敗しました。")
+            )
+        return True
+
     elif action == "study_approve":
         if not EconomyService.is_admin(user_id):
             line_bot_api.reply_message(

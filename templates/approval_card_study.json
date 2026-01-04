@@ -54,6 +54,16 @@
           "label": "承認",
           "data": "action=study_approve&row_id=${row_index}&target=${user_id}&minutes=${earned_exp}"
         }
+      },
+      {
+        "type": "button",
+        "style": "secondary",
+        "margin": "sm",
+        "action": {
+          "type": "postback",
+          "label": "却下",
+          "data": "action=study_reject&row_id=${row_index}&target=${user_id}"
+        }
       }
     ]
   }

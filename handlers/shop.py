@@ -159,6 +159,33 @@ def handle_postback(event, action, data):
         )
         return True
 
+    elif action == "shop_reject":
+        if not EconomyService.is_admin(user_id):
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="権限がありません")
+            )
+            return True
+
+        target_id = data.get("target")
+        row_id = data.get("request_id") or data.get("row_id")
+        cost = int(data.get("cost", 0))
+
+        if ShopService.deny_request(row_id):
+            # Refund
+            EconomyService.add_exp(target_id, cost, "REFUND")
+
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(
+                    text=f"交換リクエストを却下しました。\n{cost} pt を返金しました。"
+                ),
+            )
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text="却下に失敗しました。")
+            )
+        return True
+
     elif action == "shop_approve":
         if not EconomyService.is_admin(user_id):
             line_bot_api.reply_message(
