@@ -7,53 +7,58 @@ class StatusService:
     @staticmethod
     def get_rank_info(total_minutes):
         """累計勉強時間からランク情報を取得"""
-        # ランク定義
-        # E: 0-180, D: 180-600, C: 600-1200, B: 1200-3000, A: 3000-6000, S: 6000+
-        if total_minutes >= 6000:
+        # ランク定義 (難易度調整版)
+        # E: 0-300 (5h)
+        # D: 300-1200 (20h)
+        # C: 1200-3600 (60h)
+        # B: 3600-7200 (120h)
+        # A: 7200-12000 (200h)
+        # S: 12000+ (200h+)
+        if total_minutes >= 12000:
             return {
                 "name": "Rank S: 伝説の勇者",
                 "color": "#9932CC",
                 "next": None,
-                "base": 6000,
+                "base": 12000,
                 "img": "rank_s.png",
             }
-        elif total_minutes >= 3000:
+        elif total_minutes >= 7200:
             return {
                 "name": "Rank A: 黄金の騎士",
                 "color": "#FFD700",
-                "next": 6000,
-                "base": 3000,
+                "next": 12000,
+                "base": 7200,
                 "img": "rank_a.png",
             }
-        elif total_minutes >= 1200:
+        elif total_minutes >= 3600:
             return {
                 "name": "Rank B: 銀の熟練者",
                 "color": "#C0C0C0",
-                "next": 3000,
-                "base": 1200,
+                "next": 7200,
+                "base": 3600,
                 "img": "rank_b.png",
             }
-        elif total_minutes >= 600:
+        elif total_minutes >= 1200:
             return {
                 "name": "Rank C: 銅の戦士",
                 "color": "#CD7F32",
-                "next": 1200,
-                "base": 600,
+                "next": 3600,
+                "base": 1200,
                 "img": "rank_c.png",
             }
-        elif total_minutes >= 180:
+        elif total_minutes >= 300:
             return {
                 "name": "Rank D: 鉄の駆け出し",
                 "color": "#708090",
-                "next": 600,
-                "base": 180,
+                "next": 1200,
+                "base": 300,
                 "img": "rank_d.png",
             }
         else:
             return {
                 "name": "Rank E: 見習い",
                 "color": "#607D8B",
-                "next": 180,
+                "next": 300,
                 "base": 0,
                 "img": "rank_e.png",
             }
