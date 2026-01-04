@@ -169,13 +169,33 @@ def handle_postback(event, action, data):
         job_id = data.get("job_id") or data.get("row_id")
         success, result = JobService.reject_job(job_id)
 
+        # 承認者名を取得
+        try:
+            approver_profile = line_bot_api.get_profile(user_id)
+            approver_name = approver_profile.display_name
+        except:
+            approver_name = "管理者"
+
         if success:
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"「{result}」を却下しました。（ステータスをASSIGNEDに戻しました）"
+                    text=f"「{result}」を却下しました。（ステータスをASSIGNEDに戻しました）\n担当：{approver_name}"
                 ),
             )
+
+            # ユーザーへ通知
+            target_id = data.get("target")
+            if target_id:
+                try:
+                    line_bot_api.push_message(
+                        target_id,
+                        TextSendMessage(
+                            text=f"😢 お手伝い「{result}」が却下されました。\n担当：{approver_name}\n内容を確認して再報告してください。"
+                        ),
+                    )
+                except:
+                    pass
         else:
             line_bot_api.reply_message(
                 event.reply_token, TextSendMessage(text=f"エラー: {result}")

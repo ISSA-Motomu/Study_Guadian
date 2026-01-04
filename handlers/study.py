@@ -214,10 +214,31 @@ def handle_postback(event, action, data):
         target_id = data.get("target")
         row_id = data.get("row_id")
 
+        # 承認者名を取得
+        try:
+            approver_profile = line_bot_api.get_profile(user_id)
+            approver_name = approver_profile.display_name
+        except:
+            approver_name = "管理者"
+
         if row_id and GSheetService.reject_study(int(row_id)):
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text="勉強記録を却下しました。")
+                event.reply_token,
+                TextSendMessage(
+                    text=f"勉強記録を却下しました。\n担当：{approver_name}"
+                ),
             )
+
+            # ユーザーへ通知
+            try:
+                line_bot_api.push_message(
+                    target_id,
+                    TextSendMessage(
+                        text=f"😢 勉強記録が却下されました。\n担当：{approver_name}\n内容を確認して再申請してください。"
+                    ),
+                )
+            except:
+                pass
         else:
             line_bot_api.reply_message(
                 event.reply_token, TextSendMessage(text="却下に失敗しました。")
