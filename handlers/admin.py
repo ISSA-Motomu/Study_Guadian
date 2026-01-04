@@ -279,8 +279,8 @@ def handle_message(event, text):
         if text == "コマンド" or text == "help" or text == "ヘルプ" or text == "管理":
             if EconomyService.is_admin(user_id):
                 help_text = (
-                    "🛠 管理者用コマンド一覧\n\n"
-                    "【管理機能】\n"
+                    "🛠 コマンド一覧\n\n"
+                    "【管理者(親用)】\n"
                     "・タスク追加 [タイトル] [報酬]\n"
                     "  例: タスク追加 風呂掃除 300\n"
                     "・商品追加\n"
@@ -291,18 +291,18 @@ def handle_message(event, text):
                     "  (ユーザー選択→ポイント入力)\n"
                     "・ポイント修正\n"
                     "  (ユーザー選択→残高修正)\n"
-                    "・!reset / !init\n"
-                    "  (自分自身のデータをリセット)\n\n"
-                    "【確認機能】\n"
                     "・状況 / ステータス\n"
                     "  (直近の取引履歴を表示)\n"
                     "・コマンド\n"
                     "  (このヘルプを表示)\n\n"
-                    "【一般機能 (テスト用)】\n"
+                    "【一般(子供用)】\n"
                     "・勉強開始 / 勉強終了\n"
                     "・ショップ / 買い物\n"
                     "・ガチャ\n"
-                    "・掲載中のジョブ"
+                    "・掲載中のジョブ\n\n"
+                    "【開発者用】\n"
+                    "・!reset / !init\n"
+                    "  (自分自身のデータをリセット)"
                 )
                 line_bot_api.reply_message(
                     event.reply_token, TextSendMessage(text=help_text)
