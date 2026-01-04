@@ -99,6 +99,9 @@ def handle_postback(event):
     data = dict(x.split("=") for x in data_str.split("&"))
     action = data.get("action")
 
+    # グループ判定
+    is_group = event.source.type != "user"
+
     # 各ハンドラに委譲
     if common.handle_postback(event, action, data):
         return
@@ -106,8 +109,12 @@ def handle_postback(event):
         return
     if shop.handle_postback(event, action, data):
         return
-    if admin.handle_postback(event, action, data):
-        return
+
+    # グループでは管理機能を使えないようにする
+    if not is_group:
+        if admin.handle_postback(event, action, data):
+            return
+
     if job.handle_postback(event, action, data):
         return
     if status.handle_postback(event, action, data):
@@ -120,6 +127,9 @@ def handle_postback(event):
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     msg = event.message.text
+
+    # グループ判定
+    is_group = event.source.type != "user"
 
     # 共通処理（ユーザー登録・オンボーディング）
     if common.handle_message(event, msg):
@@ -134,8 +144,12 @@ def handle_message(event):
         return
     if job.handle_message(event, msg):
         return
-    if admin.handle_message(event, msg):
-        return
+
+    # グループでは管理機能を使えないようにする
+    if not is_group:
+        if admin.handle_message(event, msg):
+            return
+
     if status.handle_message(event, msg):
         return
     if gacha.handle_message(event, msg):
