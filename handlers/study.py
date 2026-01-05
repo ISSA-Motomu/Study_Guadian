@@ -131,7 +131,7 @@ def handle_postback(event, action, data):
         else:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="勉強中の記録が見つかりません。"),
+                TextSendMessage(text="あれ？勉強中の記録が見つからないよ？"),
             )
         return True
 
@@ -169,7 +169,8 @@ def handle_postback(event, action, data):
             )
         else:
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text="エラー：再開に失敗しました。")
+                event.reply_token,
+                TextSendMessage(text="ごめん、再開できなかったみたい💦"),
             )
         return True
 
@@ -214,7 +215,7 @@ def handle_postback(event, action, data):
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(
-                        text="【記録終了】\nお疲れ様でした！\n\n今日の成果を一言で教えてね。\n(例: 算数ドリル P20-22, 英単語50個)"
+                        text="【記録終了】\nお疲れ様！頑張ったね✨\n\n今日の成果、一言で教えてくれる？\n(例: 算数ドリル P20-22, 英単語50個)"
                     ),
                 )
 
@@ -222,12 +223,14 @@ def handle_postback(event, action, data):
                 print(f"計算エラー: {e}")
                 line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text="時間の計算に失敗しました。"),
+                    TextSendMessage(
+                        text="ごめん、時間の計算がうまくいかなかったみたい💦"
+                    ),
                 )
         else:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="「勉強開始」が見つかりません。"),
+                TextSendMessage(text="あれ？「勉強開始」の記録が見つからないよ？"),
             )
         return True
 
@@ -261,7 +264,7 @@ def handle_postback(event, action, data):
                 line_bot_api.push_message(
                     target_id,
                     TextSendMessage(
-                        text=f"😢 勉強記録が却下されました。\n担当：{approver_name}\n内容を確認して再申請してください。"
+                        text=f"😢 ごめんね、勉強記録が却下されちゃったみたい。\n担当：{approver_name}\n内容を確認して、もう一回申請してみて！"
                     ),
                 )
             except:
@@ -329,7 +332,7 @@ def handle_postback(event, action, data):
             # 対象ユーザーへ通知（Push Message）
             try:
                 messages = []
-                msg_text = f"💮 勉強時間が承認されました！\n承認者：{approver_name}\n+{exp} EXP\n(現在残高: {new_balance} EXP)"
+                msg_text = f"💮 勉強時間が承認されたよ！やったね✨\n承認者：{approver_name}\n+{exp} EXP GET！\n(今のEXP: {new_balance})"
                 if request_time:
                     msg_text += f"\n申請時刻：{request_time}"
 
@@ -349,7 +352,7 @@ def handle_postback(event, action, data):
 
                     messages.append(
                         TextSendMessage(
-                            text=f"🎉 おめでとう！ランクアップ！\n新しいランク: {new_rank_info['name']}"
+                            text=f"🎉 すごい！ランクアップだよ！✨\n新しいランク: {new_rank_info['name']}\nこれからも一緒に頑張ろうね！"
                         )
                     )
                     messages.append(
@@ -400,7 +403,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="今日の集中度はどうでしたか？",
+                    text="今日の集中度、どうだった？こっそり教えて！",
                     quick_reply=QuickReply(items=items),
                 ),
             )
@@ -417,7 +420,7 @@ def handle_message(event, text):
             else:
                 line_bot_api.reply_message(
                     event.reply_token,
-                    TextSendMessage(text="1〜5の数字で答えてね。"),
+                    TextSendMessage(text="1〜5の数字で教えてね！"),
                 )
                 return True
 
@@ -532,7 +535,7 @@ def finalize_study(event, user_id, state_data, concentration):
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(
-            text=f"記録しました！\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5{bonus_msg}{achievement_msg}{stats_msg}\n\n親に承認依頼を送りました。"
+            text=f"OK！記録したよ✨\n勉強時間: {hours}時間{mins}分{subject_str}\n成果: {comment}\n集中度: {concentration}/5{bonus_msg}{achievement_msg}{stats_msg}\n\n親御さんに報告しておいたからね！"
         ),
     )
 
@@ -596,7 +599,7 @@ def process_timeout_sessions(sessions):
             line_bot_api.push_message(
                 user_id,
                 TextSendMessage(
-                    text=f"⏰ 上限記録時間の1時間半が経過しました。\n自動で終了フェーズに移行します。\n\n今日の成果を一言で教えてね。"
+                    text=f"⏰ 1時間半経ったよ！根詰めすぎは良くないから、一旦休憩しよ？\n自動で終了にしておくね。\n\n今日の成果、教えてくれる？"
                 ),
             )
         except Exception as e:

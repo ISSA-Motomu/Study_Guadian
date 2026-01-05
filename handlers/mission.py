@@ -13,7 +13,7 @@ def handle_message(event, text):
         if not missions:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="現在進行中のミッションはありません。"),
+                TextSendMessage(text="今挑戦できるミッションはないみたい💦"),
             )
             return True
 
@@ -119,7 +119,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="ミッションの完了を報告しました！\n親の承認をお待ちください。"
+                    text="ミッション完了！報告しておいたよ✨\n親御さんの承認を待っててね！"
                 ),
             )
 
@@ -143,7 +143,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="エラー：ミッションが見つからないか、既に報告済みです。"
+                    text="あれ？ミッションが見つからないか、もう報告済みみたい💦"
                 ),
             )
         return True

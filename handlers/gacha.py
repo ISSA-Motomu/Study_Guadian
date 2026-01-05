@@ -14,9 +14,7 @@ def handle_message(event, text):
     if text == "ガチャ":
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(
-                text="ガチャは現在実装されていません。解禁まで待ってください。"
-            ),
+            TextSendMessage(text="ガチャはまだ準備中だよ💦 もうちょっと待っててね！"),
         )
         return True
 
@@ -29,7 +27,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="🔒 ガチャはロックされています。\n\n「Rank D」以上になると解禁されます。\nまずは勉強してランクを上げよう！"
+                    text="🔒 ガチャはまだロックされてるよ💦\n\n「Rank D」以上になったら解禁！\nまずは勉強してランクを上げよう！"
                 ),
             )
             return True
@@ -40,7 +38,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"ポイントが足りません。\nガチャを引くには {COST} pt必要です。"
+                    text=f"ポイントが足りないみたい💦\nガチャを引くには {COST} pt必要だよ！"
                 ),
             )
             return True

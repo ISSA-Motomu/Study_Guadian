@@ -22,14 +22,14 @@
     "contents": [
       {
         "type": "text",
-        "text": "ようこそ、${name}！",
+        "text": "ようこそ、${name}くん！✨",
         "weight": "bold",
         "size": "xl",
         "wrap": true
       },
       {
         "type": "text",
-        "text": "冒険の準備が整いました。",
+        "text": "これから一緒に頑張ろうね！",
         "size": "sm",
         "color": "#aaaaaa",
         "margin": "sm"
@@ -41,7 +41,7 @@
         "contents": [
           {
             "type": "text",
-            "text": "🎁 初回ログインボーナス",
+            "text": "🎁 入学祝いボーナス",
             "weight": "bold",
             "color": "#ff5555",
             "size": "sm"

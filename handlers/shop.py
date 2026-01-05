@@ -21,7 +21,8 @@ def handle_postback(event, action, data):
 
         if not item:
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text="アイテムが見つかりません。")
+                event.reply_token,
+                TextSendMessage(text="あれ？そのアイテム、見つからないみたい💦"),
             )
             return True
 
@@ -44,7 +45,8 @@ def handle_postback(event, action, data):
 
         if not item:
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text="アイテムが見つかりません。")
+                event.reply_token,
+                TextSendMessage(text="あれ？そのアイテム、見つからないみたい💦"),
             )
             return True
 
@@ -60,13 +62,15 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text=f"「{item['name']}」ですね。\n何に使いますか？一言コメントを入力してください。"
+                    text=f"「{item['name']}」だね！\n何に使うの？一言教えて！"
                 ),
             )
         else:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="🚫 ポイントが足りません！もっと勉強しよう。"),
+                TextSendMessage(
+                    text="🚫 ポイントが足りないみたい💦 もっと勉強して貯めよう！"
+                ),
             )
         return True
 
@@ -74,9 +78,7 @@ def handle_postback(event, action, data):
         if not EconomyService.is_admin(user_id):
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(
-                    text="🚫 あなたには承認権限がありません。\nお母さんに頼んでね！"
-                ),
+                TextSendMessage(text="🚫 承認権限がないよ💦 お母さんに頼んでみてね！"),
             )
             return True
 
@@ -90,7 +92,7 @@ def handle_postback(event, action, data):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text=f"🙆‍♀️ 承認されました！\n\n🎟 【利用許可証】\n{item_name}\n\nこの画面を親に見せて使いましょう！"
+                text=f"🙆‍♀️ 承認されたよ！\n\n🎟 【利用許可証】\n{item_name}\n\nこの画面を親御さんに見せて使ってね！"
             ),
         )
         return True
@@ -111,7 +113,7 @@ def handle_postback(event, action, data):
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(
-                text=f"🙅‍♀️ 却下されました。\n{cost} pt を返金しました。ドンマイ！"
+                text=f"🙅‍♀️ 却下されちゃった…\n{cost} pt は返金しておいたよ。ドンマイ！"
             ),
         )
         return True
@@ -156,7 +158,7 @@ def handle_postback(event, action, data):
                 line_bot_api.push_message(
                     target_id,
                     TextSendMessage(
-                        text=f"🙅‍♀️ 交換リクエストが却下されました。\n申請アイテム：{item_name}\n担当：{approver_name}\n{cost} pt を返金しました。ドンマイ！"
+                        text=f"🙅‍♀️ 交換リクエストが却下されちゃった…\n申請アイテム：{item_name}\n担当：{approver_name}\n{cost} pt は返金しておいたよ。ドンマイ！"
                     ),
                 )
             except:
@@ -213,7 +215,7 @@ def handle_postback(event, action, data):
 
             # ユーザーへ通知
             try:
-                msg_text = f"🛍️ ポイント交換リクエスト「{item_name}」が承認されました！\n承認者：{approver_name}\n(現在残高: {new_balance} pt)\n\n親に見せて使ってね！"
+                msg_text = f"🛍️ ポイント交換リクエスト「{item_name}」が承認されたよ！やったね✨\n承認者：{approver_name}\n(今の残高: {new_balance} pt)\n\n親御さんに見せて使ってね！"
                 if request_time:
                     msg_text += f"\n申請時刻：{request_time}"
 
@@ -295,7 +297,7 @@ def handle_message(event, text):
         # 購入者へのメッセージ
         reply_msgs = [
             TextSendMessage(
-                text=f"[ポイント交換申請]\n✅ {item_name} を申請しました。\n(残高: {new_balance} pt)\n親の承認をお待ちください..."
+                text=f"[ポイント交換申請]\n✅ {item_name} を申請したよ！\n(残高: {new_balance} pt)\n親御さんの承認を待っててね！"
             )
         ]
 
@@ -314,7 +316,7 @@ def handle_message(event, text):
         if not shop_items:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="現在販売中の商品はありません。"),
+                TextSendMessage(text="今は交換できる商品がないみたい💦"),
             )
             return True
 

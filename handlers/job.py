@@ -51,7 +51,7 @@ def send_job_list(reply_token, user_id):
         contents.append(
             {
                 "type": "text",
-                "text": "現在募集中のタスクはありません",
+                "text": "今募集してるタスクはないみたい💦",
                 "size": "sm",
                 "color": "#aaaaaa",
                 "margin": "sm",
@@ -100,7 +100,7 @@ def handle_postback(event, action, data):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="🚫 管理者はお手伝いを受注できません。\n子供たちに任せましょう！"
+                    text="🚫 管理者はお手伝いできないよ💦 子供たちに任せよう！"
                 ),
             )
             return True
@@ -148,9 +148,7 @@ def handle_postback(event, action, data):
         user_states[user_id] = {"state": "WAITING_JOB_COMMENT", "job_id": job_id}
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(
-                text="お疲れ様でした！\n完了報告のコメントを入力してください。"
-            ),
+            TextSendMessage(text="お疲れ様！\n完了報告のコメント、教えてくれる？"),
         )
         return True
 
@@ -186,7 +184,7 @@ def handle_postback(event, action, data):
                     line_bot_api.push_message(
                         target_id,
                         TextSendMessage(
-                            text=f"😢 お手伝い「{result}」が却下されました。\n担当：{approver_name}\n内容を確認して再報告してください。"
+                            text=f"😢 お手伝い「{result}」が却下されちゃった…\n担当：{approver_name}\n内容を確認して、もう一回報告してみて！"
                         ),
                     )
                 except:
@@ -230,7 +228,7 @@ def handle_postback(event, action, data):
 
             # 対象ユーザーへ通知
             try:
-                msg_text = f"🧹 お手伝い「{result['title']}」が承認されました！\n承認者：{approver_name}\n+{result['reward']} EXP\n(現在残高: {result['balance']} EXP)"
+                msg_text = f"🧹 お手伝い「{result['title']}」が承認されたよ！ありがとう✨\n承認者：{approver_name}\n+{result['reward']} EXP GET！\n(今のEXP: {result['balance']})"
                 if request_time:
                     msg_text += f"\n申請時刻：{request_time}"
 
@@ -288,7 +286,7 @@ def handle_message(event, text):
                 event.reply_token,
                 [
                     TextSendMessage(
-                        text="お疲れ様！親に報告しました。承認を待ってね。"
+                        text="お疲れ様！親御さんに報告しておいたよ✨ 承認を待っててね！"
                     ),
                     FlexSendMessage(alt_text="承認依頼", contents=approve_flex),
                 ],

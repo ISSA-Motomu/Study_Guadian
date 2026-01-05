@@ -21,7 +21,7 @@ def send_user_status_view(reply_token, user_id, is_detailed=False):
         line_bot_api.reply_message(
             reply_token,
             TextSendMessage(
-                text="ユーザー登録されていません。何か発言して登録してください。"
+                text="まだ登録されてないみたい💦 何かメッセージを送って登録してね！"
             ),
         )
         return
@@ -291,7 +291,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="誰のステータスを確認しますか？",
+                    text="誰のステータスを確認する？",
                     quick_reply=QuickReply(items=items),
                 ),
             )

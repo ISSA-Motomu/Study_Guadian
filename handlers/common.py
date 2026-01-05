@@ -62,7 +62,7 @@ def handle_postback(event, action, data):
             is_active = uid == current_uid
 
             bg_color = "#E0F7FA" if is_active else "#FFFFFF"
-            status_text = "選択中" if is_active else "切替"
+            status_text = "今のキミ" if is_active else "交代！"
             status_color = "#00BCD4" if is_active else "#aaaaaa"
 
             bubble = {
@@ -118,7 +118,7 @@ def handle_postback(event, action, data):
                 "contents": [
                     {
                         "type": "text",
-                        "text": "＋ 新規追加",
+                        "text": "＋ 新入生",
                         "weight": "bold",
                         "size": "sm",
                         "align": "center",
@@ -126,7 +126,7 @@ def handle_postback(event, action, data):
                     },
                     {
                         "type": "text",
-                        "text": "LINEなしユーザー",
+                        "text": "体験入学生",
                         "size": "xxs",
                         "color": "#aaaaaa",
                         "align": "center",
@@ -143,7 +143,7 @@ def handle_postback(event, action, data):
                         "type": "button",
                         "action": {
                             "type": "postback",
-                            "label": "作成",
+                            "label": "登録",
                             "data": "action=create_new_user_flow",
                         },
                         "height": "sm",
@@ -170,7 +170,7 @@ def handle_postback(event, action, data):
 
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text=f"ユーザーを「{name}」に切り替えました。"),
+            TextSendMessage(text=f"「{name}」ちゃんに交代したよ！"),
         )
         return True
 
@@ -179,7 +179,7 @@ def handle_postback(event, action, data):
         user_states[line_user_id] = "WAITING_NEW_USER_NAME"
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="新しく追加するユーザーの名前を入力してください。"),
+            TextSendMessage(text="新しい子の名前、なんていうの？教えて！"),
         )
         return True
 
@@ -280,7 +280,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="名前が長すぎます。10文字以内で入力してください。"
+                    text="ちょっと名前が長いかも…💦 10文字以内でお願いできるかな？"
                 ),
             )
             return True
@@ -298,15 +298,16 @@ def handle_message(event, text):
 
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(
-                    text=f"ユーザー「{new_name}」を作成し、切り替えました！"
-                ),
+                TextSendMessage(text=f"「{new_name}」ちゃんね！OK、切り替えたよ✨"),
             )
             if line_user_id in user_states:
                 del user_states[line_user_id]
         else:
             line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text="作成に失敗しました。")
+                event.reply_token,
+                TextSendMessage(
+                    text="ごめん、ちょっとうまく登録できなかったみたい…もう一回試してみて？"
+                ),
             )
         return True
 
@@ -367,7 +368,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="名前が長すぎます。10文字以内で入力してください。"
+                    text="ちょっと名前が長いかも…💦 10文字以内でお願いできるかな？"
                 ),
             )
             return True
@@ -387,7 +388,7 @@ def handle_message(event, text):
                 line_bot_api.reply_message(
                     event.reply_token,
                     TextSendMessage(
-                        text=f"ようこそ、{display_name}さん！\n登録完了ボーナスとして 500 pt をプレゼントしました！"
+                        text=f"ようこそ、{display_name}くん！✨\n入学祝いに 500 pt プレゼントしておくね！これから一緒に頑張ろ！"
                     ),
                 )
 
@@ -397,7 +398,9 @@ def handle_message(event, text):
         else:
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text="登録に失敗しました。もう一度お試しください。"),
+                TextSendMessage(
+                    text="あれっ、登録に失敗しちゃったみたい💦 もう一回試してみてくれる？"
+                ),
             )
         return True
 
@@ -415,7 +418,7 @@ def handle_message(event, text):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(
-                    text="はじめまして！Study Guardianへようこそ。\n\nまずはあなたの名前を教えてね。\n（呼び名をメッセージで送ってください）"
+                    text="はじめまして！先輩だよ✨\nこれから一緒に勉強頑張ろうね！\n\nまずはキミの名前を教えてくれるかな？"
                 ),
             )
         return True

@@ -22,7 +22,7 @@
     "contents": [
       {
         "type": "text",
-        "text": "Study Guardianへようこそ！",
+        "text": "Study Guardianへようこそ！✨",
         "weight": "bold",
         "size": "md",
         "align": "center"
@@ -39,19 +39,19 @@
         "contents": [
           {
             "type": "text",
-            "text": "✏️ 勉強してポイントGET",
+            "text": "✏️ 勉強してポイントGET！",
             "size": "sm",
             "color": "#555555"
           },
           {
             "type": "text",
-            "text": "🛍️ 貯めたポイントでアイテム交換",
+            "text": "🛍️ 貯めたポイントでご褒美GET！",
             "size": "sm",
             "color": "#555555"
           },
           {
             "type": "text",
-            "text": "📈 ランクアップで最強を目指せ",
+            "text": "📈 ランクアップで高みを目指そう！",
             "size": "sm",
             "color": "#555555"
           }
@@ -63,7 +63,7 @@
       },
       {
         "type": "text",
-        "text": "まずはプレイヤー名を登録しよう！",
+        "text": "まずはキミの名前を教えてね！",
         "margin": "lg",
         "align": "center",
         "weight": "bold",
@@ -71,7 +71,7 @@
       },
       {
         "type": "text",
-        "text": "下の入力欄に名前を入れて送信してね 👇",
+        "text": "下の入力欄に名前を入れて送ってね 👇",
         "margin": "sm",
         "size": "xs",
         "color": "#aaaaaa",
