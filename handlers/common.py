@@ -25,6 +25,24 @@ def switch_user(line_user_id, target_user_id):
 def handle_postback(event, action, data):
     line_user_id = event.source.user_id
 
+    elif action == "switch_admin":
+        target_id = data.get("target_id")
+        if target_id:
+            # セッションを切り替え
+            switch_user(line_user_id, target_id)
+            
+            # 念のため権限も確認・付与（本来はDB側で持っているはずだが）
+            # ここでは「なりすまし」状態にする
+            
+            user_info = EconomyService.get_user_info(target_id)
+            name = user_info.get("display_name", "Unknown")
+            
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=f"管理者「{name}」としてログインしました。")
+            )
+        return True
+
     if action == "switch_user_menu":
         # ユーザー切り替えメニューを表示
         users = EconomyService.get_all_users()
@@ -173,18 +191,87 @@ def handle_message(event, text):
 
     # --- 隠しコマンド: 管理者復帰 ---
     if text == "!admin":
-        # セッションをリセット（自分自身に戻る）
-        if line_user_id in ACTIVE_SESSIONS:
-            del ACTIVE_SESSIONS[line_user_id]
+        # 既存の管理者リストを取得
+        admins = EconomyService.get_admin_users()
+        if not admins:
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text="管理者が登録されていません。")
+            )
+            return True
 
-        # 自分自身に管理者権限を付与
-        EconomyService.update_user_role(line_user_id, "ADMIN")
+        # カルーセルで選択させる
+        bubbles = []
+        for admin in admins:
+            # 自分自身は除外しない（再選択もありうるため）
+            # テンプレート読み込み
+            bubble = load_template(
+                "admin_switch_carousel.json",
+                name=admin.get("display_name", "Unknown"),
+                user_id=admin.get("user_id", "")
+            )
+            # カルーセルの中身はbubbleの配列ではなく、bubbleそのものを取り出す必要があるが
+            # load_templateはdictを返す。carouselのcontentsはbubbleのリスト。
+            # admin_switch_carousel.json は carousel 全体ではなく bubble 単体として定義すべきか、
+            # あるいは carousel 全体を定義して中身を置換するか。
+            # ここでは bubble 単体のテンプレートとして扱い、コード側で CarouselContainer に詰める。
+            
+            # admin_switch_carousel.json の中身を bubble 単体に変更します。
+            # (後で修正します)
+            
+            # 修正: admin_switch_carousel.json は carousel 全体ではなく bubble 単体にする
+            # しかし、load_template は文字列置換しかしない。
+            # ここでは手動で構築するか、テンプレートを修正する。
+            
+            # 簡易的に手動構築
+            bubble = {
+              "type": "bubble",
+              "body": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "text",
+                    "text": f"👤 {admin.get('display_name', 'Unknown')}",
+                    "weight": "bold",
+                    "size": "xl"
+                  },
+                  {
+                    "type": "text",
+                    "text": "このアカウントとしてログイン",
+                    "size": "sm",
+                    "color": "#555555",
+                    "wrap": True
+                  }
+                ]
+              },
+              "footer": {
+                "type": "box",
+                "layout": "vertical",
+                "contents": [
+                  {
+                    "type": "button",
+                    "style": "primary",
+                    "action": {
+                      "type": "postback",
+                      "label": "選択",
+                      "data": f"action=switch_admin&target_id={admin.get('user_id')}"
+                    }
+                  }
+                ]
+              }
+            }
+            bubbles.append(bubble)
 
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(
-                text="管理者モードに復帰しました。\n(セッションリセット & ADMIN権限付与)"
-            ),
+            FlexSendMessage(
+                alt_text="管理者選択",
+                contents={
+                    "type": "carousel",
+                    "contents": bubbles
+                }
+            )
         )
         return True
     # ------------------------------

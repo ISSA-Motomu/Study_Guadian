@@ -1,0 +1,42 @@
+{
+  "type": "carousel",
+  "contents": [
+    {
+      "type": "bubble",
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "👤 ${name}",
+            "weight": "bold",
+            "size": "xl"
+          },
+          {
+            "type": "text",
+            "text": "このアカウントに切り替えますか？",
+            "size": "sm",
+            "color": "#555555",
+            "wrap": true
+          }
+        ]
+      },
+      "footer": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "button",
+            "style": "primary",
+            "action": {
+              "type": "postback",
+              "label": "これにする",
+              "data": "action=switch_admin&target_id=${user_id}"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
