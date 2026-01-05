@@ -38,6 +38,26 @@
         "text": "現在残高: ${new_balance} pt",
         "size": "sm",
         "color": "#aaaaaa"
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "📝 ${comment}",
+        "wrap": true,
+        "margin": "md",
+        "size": "sm",
+        "color": "#555555"
+      },
+      {
+        "type": "text",
+        "text": "🕒 ${timestamp}",
+        "size": "xs",
+        "color": "#aaaaaa",
+        "margin": "sm",
+        "align": "end"
       }
     ]
   },

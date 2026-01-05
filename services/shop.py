@@ -5,7 +5,7 @@ from utils.cache import shop_items_cache, cached
 
 class ShopService:
     @staticmethod
-    def create_request(user_id, item_key, cost):
+    def create_request(user_id, item_key, cost, comment=""):
         """購入リクエストを作成"""
         sheet = GSheetService.get_worksheet("shop_requests")
         if not sheet:
@@ -14,8 +14,10 @@ class ShopService:
         try:
             req_id = f"req_{int(datetime.datetime.now().timestamp())}"
             now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            # ID, User, Item, Cost, Status, Time
-            sheet.append_row([req_id, user_id, item_key, cost, "PENDING", now_str])
+            # ID, User, Item, Cost, Status, Time, Comment
+            sheet.append_row(
+                [req_id, user_id, item_key, cost, "PENDING", now_str, comment]
+            )
             return req_id
         except Exception as e:
             print(f"Shop Request Error: {e}")

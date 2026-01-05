@@ -175,7 +175,7 @@ class JobService:
             return False, "エラーが発生しました"
 
     @staticmethod
-    def finish_job(job_id, user_id):
+    def finish_job(job_id, user_id, comment=""):
         """ジョブ完了報告"""
         sheet = GSheetService.get_worksheet("jobs")
         if not sheet:
@@ -193,6 +193,11 @@ class JobService:
                 return False, "担当者ではありません"
 
             sheet.update_cell(row, 4, "REVIEW")
+
+            # コメント(H列=8)と完了時刻(I列=9)を記録
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sheet.update_cell(row, 8, comment)
+            sheet.update_cell(row, 9, now_str)
 
             title = sheet.cell(row, 2).value
             reward = sheet.cell(row, 3).value

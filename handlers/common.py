@@ -25,21 +25,21 @@ def switch_user(line_user_id, target_user_id):
 def handle_postback(event, action, data):
     line_user_id = event.source.user_id
 
-    elif action == "switch_admin":
+    if action == "switch_admin":
         target_id = data.get("target_id")
         if target_id:
             # セッションを切り替え
             switch_user(line_user_id, target_id)
-            
+
             # 念のため権限も確認・付与（本来はDB側で持っているはずだが）
             # ここでは「なりすまし」状態にする
-            
+
             user_info = EconomyService.get_user_info(target_id)
             name = user_info.get("display_name", "Unknown")
-            
+
             line_bot_api.reply_message(
                 event.reply_token,
-                TextSendMessage(text=f"管理者「{name}」としてログインしました。")
+                TextSendMessage(text=f"管理者「{name}」としてログインしました。"),
             )
         return True
 
@@ -195,8 +195,7 @@ def handle_message(event, text):
         admins = EconomyService.get_admin_users()
         if not admins:
             line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text="管理者が登録されていません。")
+                event.reply_token, TextSendMessage(text="管理者が登録されていません。")
             )
             return True
 
@@ -208,58 +207,58 @@ def handle_message(event, text):
             bubble = load_template(
                 "admin_switch_carousel.json",
                 name=admin.get("display_name", "Unknown"),
-                user_id=admin.get("user_id", "")
+                user_id=admin.get("user_id", ""),
             )
             # カルーセルの中身はbubbleの配列ではなく、bubbleそのものを取り出す必要があるが
             # load_templateはdictを返す。carouselのcontentsはbubbleのリスト。
             # admin_switch_carousel.json は carousel 全体ではなく bubble 単体として定義すべきか、
             # あるいは carousel 全体を定義して中身を置換するか。
             # ここでは bubble 単体のテンプレートとして扱い、コード側で CarouselContainer に詰める。
-            
+
             # admin_switch_carousel.json の中身を bubble 単体に変更します。
             # (後で修正します)
-            
+
             # 修正: admin_switch_carousel.json は carousel 全体ではなく bubble 単体にする
             # しかし、load_template は文字列置換しかしない。
             # ここでは手動で構築するか、テンプレートを修正する。
-            
+
             # 簡易的に手動構築
             bubble = {
-              "type": "bubble",
-              "body": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                  {
-                    "type": "text",
-                    "text": f"👤 {admin.get('display_name', 'Unknown')}",
-                    "weight": "bold",
-                    "size": "xl"
-                  },
-                  {
-                    "type": "text",
-                    "text": "このアカウントとしてログイン",
-                    "size": "sm",
-                    "color": "#555555",
-                    "wrap": True
-                  }
-                ]
-              },
-              "footer": {
-                "type": "box",
-                "layout": "vertical",
-                "contents": [
-                  {
-                    "type": "button",
-                    "style": "primary",
-                    "action": {
-                      "type": "postback",
-                      "label": "選択",
-                      "data": f"action=switch_admin&target_id={admin.get('user_id')}"
-                    }
-                  }
-                ]
-              }
+                "type": "bubble",
+                "body": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "text",
+                            "text": f"👤 {admin.get('display_name', 'Unknown')}",
+                            "weight": "bold",
+                            "size": "xl",
+                        },
+                        {
+                            "type": "text",
+                            "text": "このアカウントとしてログイン",
+                            "size": "sm",
+                            "color": "#555555",
+                            "wrap": True,
+                        },
+                    ],
+                },
+                "footer": {
+                    "type": "box",
+                    "layout": "vertical",
+                    "contents": [
+                        {
+                            "type": "button",
+                            "style": "primary",
+                            "action": {
+                                "type": "postback",
+                                "label": "選択",
+                                "data": f"action=switch_admin&target_id={admin.get('user_id')}",
+                            },
+                        }
+                    ],
+                },
             }
             bubbles.append(bubble)
 
@@ -267,11 +266,8 @@ def handle_message(event, text):
             event.reply_token,
             FlexSendMessage(
                 alt_text="管理者選択",
-                contents={
-                    "type": "carousel",
-                    "contents": bubbles
-                }
-            )
+                contents={"type": "carousel", "contents": bubbles},
+            ),
         )
         return True
     # ------------------------------

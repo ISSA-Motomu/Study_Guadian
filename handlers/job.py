@@ -4,6 +4,10 @@ from services.job import JobService
 from services.economy import EconomyService
 from utils.template_loader import load_template
 from handlers import common
+import datetime
+
+# 簡易的な状態管理
+user_states = {}
 
 
 def send_job_list(reply_token, user_id):
@@ -127,36 +131,15 @@ def handle_postback(event, action, data):
 
     elif action == "job_finish":
         job_id = data.get("id")
-        success, result = JobService.finish_job(job_id, user_id)
 
-        if success:
-            # 親への承認依頼
-            try:
-                user_info = EconomyService.get_user_info(user_id)
-                user_name = user_info["display_name"] if user_info else "User"
-            except:
-                user_name = "User"
-
-            approve_flex = load_template(
-                "job_approve_request.json",
-                user_name=user_name,
-                job_title=result["title"],
-                job_reward=result["reward"],
-                job_id=job_id,
-            )
-            line_bot_api.reply_message(
-                event.reply_token,
-                [
-                    TextSendMessage(
-                        text="お疲れ様！親に報告しました。承認を待ってね。"
-                    ),
-                    FlexSendMessage(alt_text="承認依頼", contents=approve_flex),
-                ],
-            )
-        else:
-            line_bot_api.reply_message(
-                event.reply_token, TextSendMessage(text=f"エラー: {result}")
-            )
+        # コメント入力待ち状態へ遷移
+        user_states[user_id] = {"state": "WAITING_JOB_COMMENT", "job_id": job_id}
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(
+                text="お疲れ様でした！\n完了報告のコメントを入力してください。"
+            ),
+        )
         return True
 
     elif action == "job_reject":
@@ -253,6 +236,73 @@ def handle_postback(event, action, data):
 
 def handle_message(event, text):
     user_id = event.source.user_id
+
+    # 状態チェック
+    state_data = user_states.get(user_id)
+    if state_data and state_data.get("state") == "WAITING_JOB_COMMENT":
+        # コメントを受け取って処理
+        comment = text
+        job_id = state_data["job_id"]
+
+        # 状態クリア
+        del user_states[user_id]
+
+        success, result = JobService.finish_job(job_id, user_id, comment)
+
+        if success:
+            # 親への承認依頼
+            try:
+                user_info = EconomyService.get_user_info(user_id)
+                user_name = user_info["display_name"] if user_info else "User"
+            except:
+                user_name = "User"
+
+            now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+            timestamp = now.strftime("%H:%M")
+
+            approve_flex = load_template(
+                "job_approve_request.json",
+                user_name=user_name,
+                job_title=result["title"],
+                job_reward=result["reward"],
+                job_id=job_id,
+                comment=comment,
+                timestamp=timestamp,
+            )
+            line_bot_api.reply_message(
+                event.reply_token,
+                [
+                    TextSendMessage(
+                        text="お疲れ様！親に報告しました。承認を待ってね。"
+                    ),
+                    FlexSendMessage(alt_text="承認依頼", contents=approve_flex),
+                ],
+            )
+
+            # Adminへの通知 (Multicast)
+            try:
+                admins = EconomyService.get_admin_users()
+                admin_ids = [
+                    u["user_id"]
+                    for u in admins
+                    if u.get("user_id")
+                    and not str(u["user_id"]).startswith("U_virtual_")
+                ]
+                if admin_ids:
+                    line_bot_api.multicast(
+                        admin_ids,
+                        FlexSendMessage(
+                            alt_text="お手伝い完了報告", contents=approve_flex
+                        ),
+                    )
+            except Exception as e:
+                print(f"Admin通知エラー: {e}")
+
+        else:
+            line_bot_api.reply_message(
+                event.reply_token, TextSendMessage(text=f"エラー: {result}")
+            )
+        return True
 
     if text == "ジョブ" or text == "お手伝い":
         send_job_list(event.reply_token, user_id)

@@ -31,6 +31,26 @@
         "type": "text",
         "text": "報酬: ${job_reward} EXP",
         "color": "#ff5555"
+      },
+      {
+        "type": "separator",
+        "margin": "md"
+      },
+      {
+        "type": "text",
+        "text": "📝 ${comment}",
+        "wrap": true,
+        "margin": "md",
+        "size": "sm",
+        "color": "#555555"
+      },
+      {
+        "type": "text",
+        "text": "🕒 ${timestamp}",
+        "size": "xs",
+        "color": "#aaaaaa",
+        "margin": "sm",
+        "align": "end"
       }
     ]
   },

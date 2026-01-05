@@ -4,6 +4,10 @@ from services.shop import ShopService
 from services.economy import EconomyService
 from utils.template_loader import load_template
 from handlers import common
+import datetime
+
+# 簡易的な状態管理
+user_states = {}
 
 
 def handle_postback(event, action, data):
@@ -46,66 +50,19 @@ def handle_postback(event, action, data):
 
         # 残高チェック
         if EconomyService.check_balance(user_id, item["cost"]):
-            # EXP減算 (先払い)
-            new_balance = EconomyService.add_exp(
-                user_id, -item["cost"], f"BUY_{item_key}"
-            )
-
-            # 購入リクエストを記録 (Admin承認用)
-            ShopService.create_request(user_id, item_key, item["cost"])
-
-            # 親への承認リクエストカードを作成
-            # profile = line_bot_api.get_profile(user_id) # 仮想ユーザーの場合エラーになるため廃止
-            user_info = EconomyService.get_user_info(user_id)
-            user_name = (
-                user_info.get("display_name", "Unknown") if user_info else "Unknown"
-            )
-
-            approval_flex = load_template(
-                "approval_request.json",
-                user_name=user_name,
-                item_name=item["name"],
-                item_cost=item["cost"],
-                new_balance=new_balance,
-                user_id=user_id,
-                item_key=item_key,
-            )
-
-            # 管理者(親)に通知を送る
-            admins = EconomyService.get_admin_users()
-            admin_notified = False
-            for admin in admins:
-                admin_uid = str(admin.get("user_id"))
-                # 仮想ユーザーでなければプッシュ通知 (自分自身がAdminの場合は自分にも届く)
-                if not admin_uid.startswith("U_virtual_"):
-                    try:
-                        line_bot_api.push_message(
-                            admin_uid,
-                            FlexSendMessage(
-                                alt_text="承認リクエスト", contents=approval_flex
-                            ),
-                        )
-                        admin_notified = True
-                    except Exception as e:
-                        print(f"Push Error to {admin_uid}: {e}")
-
-            # 購入者へのメッセージ
-            reply_msgs = [
+            # コメント入力待ち状態へ遷移
+            user_states[user_id] = {
+                "state": "WAITING_SHOP_COMMENT",
+                "item_key": item_key,
+                "cost": item["cost"],
+                "item_name": item["name"],
+            }
+            line_bot_api.reply_message(
+                event.reply_token,
                 TextSendMessage(
-                    text=f"[ポイント交換申請]\n✅ {item['name']} を申請しました。\n(残高: {new_balance} pt)\n親の承認をお待ちください..."
-                )
-            ]
-
-            # Adminが見つからない、または通知できなかった場合のフォールバック
-            # (開発環境などでAdminがいない場合、申請者が確認できないと困るため)
-            if not admin_notified:
-                reply_msgs.append(
-                    TextSendMessage(
-                        text="※管理者が見つからないため、通知されませんでした。"
-                    )
-                )
-
-            line_bot_api.reply_message(event.reply_token, reply_msgs)
+                    text=f"「{item['name']}」ですね。\n何に使いますか？一言コメントを入力してください。"
+                ),
+            )
         else:
             line_bot_api.reply_message(
                 event.reply_token,
@@ -270,6 +227,79 @@ def handle_postback(event, action, data):
 
 
 def handle_message(event, text):
+    user_id = event.source.user_id
+
+    # 状態チェック
+    state_data = user_states.get(user_id)
+    if state_data and state_data.get("state") == "WAITING_SHOP_COMMENT":
+        # コメントを受け取って処理
+        comment = text
+        item_key = state_data["item_key"]
+        cost = state_data["cost"]
+        item_name = state_data["item_name"]
+
+        # 状態クリア
+        del user_states[user_id]
+
+        # EXP減算 (先払い)
+        new_balance = EconomyService.add_exp(user_id, -cost, f"BUY_{item_key}")
+
+        # 購入リクエストを記録 (Admin承認用)
+        ShopService.create_request(user_id, item_key, cost, comment)
+
+        # 親への承認リクエストカードを作成
+        user_info = EconomyService.get_user_info(user_id)
+        user_name = user_info.get("display_name", "Unknown") if user_info else "Unknown"
+
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+        timestamp = now.strftime("%H:%M")
+
+        approval_flex = load_template(
+            "approval_request.json",
+            user_name=user_name,
+            item_name=item_name,
+            item_cost=cost,
+            new_balance=new_balance,
+            user_id=user_id,
+            item_key=item_key,
+            comment=comment,
+            timestamp=timestamp,
+        )
+
+        # 管理者(親)に通知を送る
+        admins = EconomyService.get_admin_users()
+        admin_notified = False
+        for admin in admins:
+            admin_uid = str(admin.get("user_id"))
+            if not admin_uid.startswith("U_virtual_"):
+                try:
+                    line_bot_api.push_message(
+                        admin_uid,
+                        FlexSendMessage(
+                            alt_text="承認リクエスト", contents=approval_flex
+                        ),
+                    )
+                    admin_notified = True
+                except Exception as e:
+                    print(f"Push Error to {admin_uid}: {e}")
+
+        # 購入者へのメッセージ
+        reply_msgs = [
+            TextSendMessage(
+                text=f"[ポイント交換申請]\n✅ {item_name} を申請しました。\n(残高: {new_balance} pt)\n親の承認をお待ちください..."
+            )
+        ]
+
+        if not admin_notified:
+            reply_msgs.append(
+                TextSendMessage(
+                    text="※管理者が見つからないため、通知されませんでした。"
+                )
+            )
+
+        line_bot_api.reply_message(event.reply_token, reply_msgs)
+        return True
+
     if text in ["ショップ", "使う", "ポイント交換"]:
         shop_items = ShopService.get_items()
         if not shop_items:

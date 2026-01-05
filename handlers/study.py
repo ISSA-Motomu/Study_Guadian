@@ -476,6 +476,9 @@ def finalize_study(event, user_id, state_data, concentration):
         admin_ids = [u["user_id"] for u in admins if u.get("user_id")]
 
         if admin_ids:
+            now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
+            timestamp = now.strftime("%H:%M")
+
             approve_flex = load_template(
                 "study_approve_request.json",
                 user_name=user_name,
@@ -486,6 +489,7 @@ def finalize_study(event, user_id, state_data, concentration):
                 user_id=user_id,
                 comment=comment + bonus_msg,
                 concentration=concentration,
+                timestamp=timestamp,
             )
             line_bot_api.multicast(
                 admin_ids,
