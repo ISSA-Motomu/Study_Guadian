@@ -25,6 +25,12 @@
       },
       {
         "type": "text",
+        "text": "申請: ${time}",
+        "size": "xs",
+        "color": "#aaaaaa"
+      },
+      {
+        "type": "text",
         "text": "${job_name}",
         "margin": "md"
       },

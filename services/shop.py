@@ -74,7 +74,10 @@ class ShopService:
             if not cell:
                 return False
             sheet.update_cell(cell.row, 5, "DENIED")
-            return True
+
+            # 商品キーを返す（アイテム名取得用）
+            item_key = sheet.cell(cell.row, 3).value
+            return item_key
         except Exception as e:
             print(f"Shop Deny Error: {e}")
             return False

@@ -132,9 +132,15 @@ def handle_postback(event, action, data):
             approver_profile = line_bot_api.get_profile(user_id)
             approver_name = approver_profile.display_name
         except:
-            approver_name = "管理者"
+            approver_name = "ADMIN"
 
-        if ShopService.deny_request(row_id):
+        denied_item_key = ShopService.deny_request(row_id)
+        if denied_item_key:
+            # 商品名を取得
+            shop_items = ShopService.get_items()
+            item_info = shop_items.get(denied_item_key)
+            item_name = item_info["name"] if item_info else "商品"
+
             # Refund
             EconomyService.add_exp(target_id, cost, "REFUND")
 
@@ -150,7 +156,7 @@ def handle_postback(event, action, data):
                 line_bot_api.push_message(
                     target_id,
                     TextSendMessage(
-                        text=f"🙅‍♀️ 交換リクエストが却下されました。\n担当：{approver_name}\n{cost} pt を返金しました。ドンマイ！"
+                        text=f"🙅‍♀️ 交換リクエストが却下されました。\n申請アイテム：{item_name}\n担当：{approver_name}\n{cost} pt を返金しました。ドンマイ！"
                     ),
                 )
             except:
