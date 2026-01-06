@@ -545,7 +545,8 @@ def finalize_study(event, user_id, state_data, concentration):
         user_name = user_info["display_name"] if user_info else "User"
 
         admins = EconomyService.get_admin_users()
-        admin_ids = [u["user_id"] for u in admins if u.get("user_id")]
+        # IDは文字列である必要があるため変換
+        admin_ids = [str(u["user_id"]) for u in admins if u.get("user_id")]
 
         if admin_ids:
             now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))

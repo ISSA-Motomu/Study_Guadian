@@ -524,6 +524,9 @@ class StatusService:
     ):
         """グラフバブル生成の共通ロジック"""
 
+        # 合計時間の計算
+        total_min = int(sum([d["minutes"] for d in history_data]))
+
         # 最大値を求めてスケーリング (最低でも60分を最大とする)
         max_min = max([d["minutes"] for d in history_data] + [60])
 
@@ -703,7 +706,7 @@ class StatusService:
             ]
 
         # 統計情報の生成
-        total_min = sum([d["minutes"] for d in history_data])
+        # total_min = sum([d["minutes"] for d in history_data]) # define at top
         stats_section = []
         if total_min > 0:
             if is_weekly:
@@ -778,8 +781,33 @@ class StatusService:
                         "type": "text",
                         "text": f"{user_data['display_name']}の学習記録",
                         "color": "#ffffff",
-                        "size": "md",
+                        "size": "xs",
                         "weight": "bold",
+                    },
+                    {
+                        "type": "box",
+                        "layout": "baseline",
+                        "margin": "md",
+                        "contents": [
+                            {
+                                "type": "text",
+                                "text": str(total_min),
+                                "color": "#ffffff",
+                                "size": "4xl",
+                                "weight": "bold",
+                                "flex": 0,
+                            },
+                            {
+                                "type": "text",
+                                "text": "min",
+                                "color": "#aaaaaa",
+                                "size": "sm",
+                                "weight": "bold",
+                                "margin": "sm",
+                                "flex": 0,
+                            },
+                        ],
+                        "justifyContent": "center",
                     },
                 ],
             },
@@ -795,14 +823,6 @@ class StatusService:
                         "alignItems": "flex-end",
                     },
                     {"type": "separator", "margin": "md", "color": "#444444"},
-                    {
-                        "type": "text",
-                        "text": f"Total: {total_min} min",
-                        "size": "sm",
-                        "color": "#ffffff",
-                        "align": "end",
-                        "margin": "md",
-                    },
                 ]
                 + stats_section
                 + inventory_section,

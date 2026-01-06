@@ -251,7 +251,13 @@ def handle_message(event, text):
     line_user_id = event.source.user_id
     user_id = common.get_current_user_id(line_user_id)
 
-    if text in ["状況", "ステータス", "status", "詳細ステータス"]:
+    if text == "詳細ステータス":
+        # 管理者であっても、自分の詳細ステータスを表示する
+        is_detailed = True
+        send_user_status_view(event.reply_token, user_id, is_detailed)
+        return True
+
+    if text in ["状況", "ステータス", "status"]:
         # 1. Adminかどうかチェック
         if EconomyService.is_admin(user_id):
             # ユーザー選択メニューを表示
@@ -299,8 +305,8 @@ def handle_message(event, text):
 
         else:
             # --- User View (Personal + Ranking) ---
-            is_detailed = text == "詳細ステータス"
-            send_user_status_view(event.reply_token, user_id, is_detailed)
+            # is_detailed = text == "詳細ステータス" # handled above
+            send_user_status_view(event.reply_token, user_id, is_detailed=False)
             return True
 
     return False
