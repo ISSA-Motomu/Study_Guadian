@@ -135,8 +135,9 @@ class HistoryService:
             records = sheet.get_all_values()
             # Header skip
             for row in records[1:]:
-                # row: [id, name, date, start, end, status]
-                if len(row) < 6:
+                # row header:
+                # 0: id, 1: name, 2: date, 3: start, 4: end, 5: status, 6: duration(min)
+                if len(row) < 7:
                     continue
                 if row[0] != user_id:
                     continue
@@ -144,18 +145,14 @@ class HistoryService:
                     continue  # 承認済みのみ
 
                 date_str = row[2]
-                start_str = row[3]
-                end_str = row[4]
 
                 try:
                     log_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
 
-                    # 時間計算
-                    s = datetime.datetime.strptime(start_str, "%H:%M:%S")
-                    e = datetime.datetime.strptime(end_str, "%H:%M:%S")
-                    if e < s:
-                        e += datetime.timedelta(days=1)
-                    minutes = int((e - s).total_seconds() / 60)
+                    # 時間計算 (以前は start/end から計算していたが、duration_min (index 6) を使用するように変更)
+                    minutes = 0
+                    if row[6] and str(row[6]).isdigit():
+                        minutes = int(row[6])
 
                     stats["total"] += minutes
 
@@ -203,7 +200,7 @@ class HistoryService:
         try:
             records = sheet.get_all_values()
             for row in records[1:]:
-                if len(row) < 6:
+                if len(row) < 7:
                     continue
                 if row[0] != user_id:
                     continue
@@ -212,18 +209,15 @@ class HistoryService:
 
                 date_str = row[2]
                 if date_str in daily_map:
-                    start_str = row[3]
-                    end_str = row[4]
                     subject = row[8] if len(row) >= 9 else "その他"
                     if not subject:
                         subject = "その他"
 
                     try:
-                        s = datetime.datetime.strptime(start_str, "%H:%M:%S")
-                        e = datetime.datetime.strptime(end_str, "%H:%M:%S")
-                        if e < s:
-                            e += datetime.timedelta(days=1)
-                        minutes = int((e - s).total_seconds() / 60)
+                        # 時間計算: duration (index 6) を使用
+                        minutes = 0
+                        if row[6] and str(row[6]).isdigit():
+                            minutes = int(row[6])
 
                         daily_map[date_str]["total"] += minutes
                         if subject not in daily_map[date_str]["subjects"]:
@@ -303,17 +297,14 @@ class HistoryService:
                             break
 
                     if target_week:
-                        start_str = row[3]
-                        end_str = row[4]
                         subject = row[8] if len(row) >= 9 else "その他"
                         if not subject:
                             subject = "その他"
 
-                        s = datetime.datetime.strptime(start_str, "%H:%M:%S")
-                        e = datetime.datetime.strptime(end_str, "%H:%M:%S")
-                        if e < s:
-                            e += datetime.timedelta(days=1)
-                        minutes = int((e - s).total_seconds() / 60)
+                        # 時間計算: duration (index 6) を使用
+                        minutes = 0
+                        if row[6] and str(row[6]).isdigit():
+                            minutes = int(row[6])
 
                         target_week["total"] += minutes
                         if subject not in target_week["subjects"]:
