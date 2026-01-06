@@ -6,6 +6,18 @@ from utils.achievements import AchievementManager
 
 class StatusService:
     @staticmethod
+    def format_duration(total_minutes):
+        """分を H時間M分 表記に変換"""
+        total_minutes = int(total_minutes)
+        if total_minutes < 60:
+            return f"{total_minutes}m"
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        if minutes == 0:
+            return f"{hours}h"
+        return f"{hours}h{minutes}m"
+
+    @staticmethod
     def get_rank_info(total_minutes):
         """累計勉強時間からランク情報を取得"""
         # ランク定義 (難易度調整版)
@@ -65,11 +77,61 @@ class StatusService:
             }
 
     @staticmethod
+    def get_rank_info_by_char(rank_char):
+        """ランク文字(S,A,B,C,D,E)からランク情報を取得"""
+        rank_char = str(rank_char).upper().strip()
+        if rank_char == "S":
+            return {
+                "name": "Rank S: 伝説の勇者",
+                "color": "#9932CC",
+                "img": "rank_s.png",
+            }
+        elif rank_char == "A":
+            return {
+                "name": "Rank A: 黄金の騎士",
+                "color": "#FFD700",
+                "img": "rank_a.png",
+            }
+        elif rank_char == "B":
+            return {
+                "name": "Rank B: 銀の熟練者",
+                "color": "#C0C0C0",
+                "img": "rank_b.png",
+            }
+        elif rank_char == "C":
+            return {
+                "name": "Rank C: 銅の戦士",
+                "color": "#CD7F32",
+                "img": "rank_c.png",
+            }
+        elif rank_char == "D":
+            return {
+                "name": "Rank D: 鉄の駆け出し",
+                "color": "#708090",
+                "img": "rank_d.png",
+            }
+        else:
+            return {
+                "name": "Rank E: 見習い",
+                "color": "#607D8B",
+                "img": "rank_e.png",
+            }
+
+    @staticmethod
     def create_medal_home_gui(user_data, weekly_ranking=[]):
         """勲章メインのホーム画面を生成"""
         total_minutes = int(user_data.get("total_study_time", 0))
 
+        # 基本情報の計算（進捗バー計算用）
         rank_data = StatusService.get_rank_info(total_minutes)
+
+        # usersシートのランク指定があれば、表示情報（名前・画像・色）を上書きする
+        sheet_rank = user_data.get("rank")
+        if sheet_rank:
+            sheet_rank_info = StatusService.get_rank_info_by_char(sheet_rank)
+            rank_data["name"] = sheet_rank_info["name"]
+            rank_data["color"] = sheet_rank_info["color"]
+            rank_data["img"] = sheet_rank_info["img"]
 
         import os
 
@@ -84,7 +146,8 @@ class StatusService:
             current_in_rank = total_minutes - rank_data["base"]
             total_in_rank = rank_data["next"] - rank_data["base"]
             progress_percent = int((current_in_rank / total_in_rank) * 100)
-            next_text = f"あと {needed}分 で昇格"
+            needed_str = StatusService.format_duration(needed)
+            next_text = f"あと {needed_str} で昇格"
         else:
             progress_percent = 100
             next_text = "最高ランク到達！"
@@ -157,8 +220,12 @@ class StatusService:
                 rank_icon = "👑" if i == 0 else f"{i + 1}."
 
                 # ランク画像の取得
-                r_total = int(r.get("total_study_time", 0))
-                r_rank_info = StatusService.get_rank_info(r_total)
+                user_rank_char = r.get("user_rank")
+                if user_rank_char:
+                    r_rank_info = StatusService.get_rank_info_by_char(user_rank_char)
+                else:
+                    r_total = int(r.get("total_study_time", 0))
+                    r_rank_info = StatusService.get_rank_info(r_total)
 
                 # ランクに応じたアイコン (E~S) を使用
                 # すでに img プロパティが rank_a.png 等になっているが、
@@ -227,8 +294,12 @@ class StatusService:
                 None,
             )
             if my_rank_data and my_rank_data["rank"] > 3:
-                m_total = int(my_rank_data.get("total_study_time", 0))
-                m_rank_info = StatusService.get_rank_info(m_total)
+                m_rank_char_val = my_rank_data.get("user_rank")
+                if m_rank_char_val:
+                    m_rank_info = StatusService.get_rank_info_by_char(m_rank_char_val)
+                else:
+                    m_total = int(my_rank_data.get("total_study_time", 0))
+                    m_rank_info = StatusService.get_rank_info(m_total)
 
                 # ユーザー名の横に表示するテキスト勲章 (例: [S])
                 m_rank_char = m_rank_info["name"].split(":")[0].replace("Rank ", "")
@@ -549,7 +620,12 @@ class StatusService:
         total_min = int(sum([d["minutes"] for d in history_data]))
 
         # 最大値を求めてスケーリング (最低でも60分を最大とする)
-        max_min = max([d["minutes"] for d in history_data] + [60])
+        # 上部のテキストやレイアウト崩れを防ぐため、最大値を少し大きめ（1.25倍）に見積もる
+        limit_val = 60
+        # ガイドライン（3h, 6h, 9h, 12h）を考慮して、最大値がそれらを超える場合にスケール調整
+        # しかしここでは単純に最大バーが天井につかないようにマージンを持たせる
+        actual_max = max([d["minutes"] for d in history_data] + [limit_val])
+        max_min = actual_max * 1.25
 
         # 科目別カラー定義
         subject_colors = {
@@ -623,7 +699,7 @@ class StatusService:
                     "contents": [
                         {
                             "type": "text",
-                            "text": str(total_minutes),
+                            "text": StatusService.format_duration(total_minutes),
                             "size": "xxs",
                             "align": "center",
                             "color": "#ffffff",
@@ -820,19 +896,10 @@ class StatusService:
                         "contents": [
                             {
                                 "type": "text",
-                                "text": str(total_min),
+                                "text": StatusService.format_duration(total_min),
                                 "color": "#ffffff",
                                 "size": "4xl",
                                 "weight": "bold",
-                                "flex": 0,
-                            },
-                            {
-                                "type": "text",
-                                "text": "min",
-                                "color": "#aaaaaa",
-                                "size": "sm",
-                                "weight": "bold",
-                                "margin": "sm",
                                 "flex": 0,
                             },
                         ],

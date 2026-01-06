@@ -458,6 +458,7 @@ class HistoryService:
                         "display_name": u.get("display_name"),
                         "weekly_exp": earned,
                         "total_study_time": u.get("total_study_time", 0),
+                        "user_rank": u.get("rank", "E"),  # シートのランク情報を追加
                     }
                 )
 
