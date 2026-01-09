@@ -65,18 +65,37 @@ class HistoryService:
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         today_str = now.strftime("%Y-%m-%d")
 
+        # Resolve User Name for fallback
+        user_name = None
+        try:
+            u_info = EconomyService.get_user_info(user_id)
+            if u_info:
+                user_name = u_info.get("display_name")
+        except:
+            pass
+
         try:
             records = sheet.get_all_values()
             # Header skip
             count = 0
             for row in records[1:]:
-                # row: [id, name, date, start, end, status]
+                # New Layout:
+                # 0:ID, 1:Name, 2:Date, 3:Start, 4:End, 5:Status, 6:Duration, 7:Rank, 8:Subject
                 if len(row) < 6:
                     continue
-                if str(row[0]) != str(user_id):
+
+                # ID Check (IDX 0)
+                is_match = False
+                if str(row[0]).strip() == str(user_id):
+                    is_match = True
+                elif user_name and str(row[1]).strip() == str(user_name):
+                    is_match = True
+
+                if not is_match:
                     continue
-                if row[2] == today_str:
-                    status = row[5]
+
+                if row[2] == today_str:  # Date is Index 2
+                    status = row[5]  # Status is Index 5
                     if status not in ["CANCELLED", "REJECTED"]:
                         count += 1
 
@@ -97,16 +116,34 @@ class HistoryService:
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         today_str = now.strftime("%Y-%m-%d")
 
+        # Resolve User Name for fallback
+        user_name = None
+        try:
+            u_info = EconomyService.get_user_info(user_id)
+            if u_info:
+                user_name = u_info.get("display_name")
+        except:
+            pass
+
         try:
             records = sheet.get_all_values()
             count = 0
             for row in records[1:]:
                 if len(row) < 6:
                     continue
-                if str(row[0]) != str(user_id):
+
+                # ID Check (IDX 0)
+                is_match = False
+                if str(row[0]).strip() == str(user_id):
+                    is_match = True
+                elif user_name and str(row[1]).strip() == str(user_name):
+                    is_match = True
+
+                if not is_match:
                     continue
-                if row[2] == today_str:
-                    status = row[5]
+
+                if row[2] == today_str:  # Date Index 2
+                    status = row[5]  # Status Index 5
                     if status not in ["CANCELLED", "REJECTED"]:
                         count += 1
             return count
@@ -131,27 +168,43 @@ class HistoryService:
 
         stats = {"weekly": 0, "monthly": 0, "total": 0}
 
+        # Resolve User Name for fallback
+        user_name = None
+        try:
+            u_info = EconomyService.get_user_info(user_id)
+            if u_info:
+                user_name = u_info.get("display_name")
+        except:
+            pass
+
         try:
             records = sheet.get_all_values()
             # Header skip
             for row in records[1:]:
-                # row header:
-                # 0: id, 1: name, 2: date, 3: start, 4: end, 5: status, 6: duration(min)
-                if len(row) < 7:
+                if len(row) < 6:
                     continue
-                if row[0] != user_id:
+
+                # ID Check (IDX 0)
+                is_match = False
+                if str(row[0]).strip() == str(user_id):
+                    is_match = True
+                elif user_name and str(row[1]).strip() == str(user_name):
+                    is_match = True
+
+                if not is_match:
                     continue
-                if row[5] != "APPROVED":
+
+                if row[5] != "APPROVED":  # Status Index 5
                     continue  # 承認済みのみ
 
-                date_str = row[2]
+                date_str = row[2]  # Date Index 2
 
                 try:
                     log_date = datetime.datetime.strptime(date_str, "%Y-%m-%d")
 
-                    # 時間計算 (以前は start/end から計算していたが、duration_min (index 6) を使用するように変更)
+                    # duration_min (index 6)
                     minutes = 0
-                    if row[6] and str(row[6]).isdigit():
+                    if len(row) > 6 and row[6] and str(row[6]).isdigit():
                         minutes = int(row[6])
 
                     stats["total"] += minutes
@@ -197,26 +250,45 @@ class HistoryService:
             d.strftime("%Y-%m-%d"): {"total": 0, "subjects": {}} for d in dates
         }
 
+        # Resolve Name
+        user_name = None
+        try:
+            u = EconomyService.get_user_info(user_id)
+            if u:
+                user_name = u.get("display_name")
+        except:
+            pass
+
         try:
             records = sheet.get_all_values()
             for row in records[1:]:
-                if len(row) < 7:
-                    continue
-                if row[0] != user_id:
-                    continue
-                if row[5] != "APPROVED":
+                if len(row) < 6:
                     continue
 
-                date_str = row[2]
+                # ID Check (IDX 0)
+                is_match = False
+                if str(row[0]).strip() == str(user_id):
+                    is_match = True
+                elif user_name and str(row[1]).strip() == str(user_name):
+                    is_match = True
+
+                if not is_match:
+                    continue
+
+                if row[5] != "APPROVED":  # Status 5
+                    continue
+
+                date_str = row[2]  # Date 2
                 if date_str in daily_map:
+                    # Subject 8
                     subject = row[8] if len(row) >= 9 else "その他"
                     if not subject:
                         subject = "その他"
 
                     try:
-                        # 時間計算: duration (index 6) を使用
+                        # Duration 6
                         minutes = 0
-                        if row[6] and str(row[6]).isdigit():
+                        if len(row) > 6 and row[6] and str(row[6]).isdigit():
                             minutes = int(row[6])
 
                         daily_map[date_str]["total"] += minutes
@@ -275,17 +347,35 @@ class HistoryService:
                 result.append({"label": w["label"], "minutes": 0, "subjects": {}})
             return result
 
+        # Resolve Name
+        user_name = None
+        try:
+            u = EconomyService.get_user_info(user_id)
+            if u:
+                user_name = u.get("display_name")
+        except:
+            pass
+
         try:
             records = sheet.get_all_values()
             for row in records[1:]:
                 if len(row) < 6:
                     continue
-                if row[0] != user_id:
-                    continue
-                if row[5] != "APPROVED":
+
+                # ID Check (IDX 0)
+                is_match = False
+                if str(row[0]).strip() == str(user_id):
+                    is_match = True
+                elif user_name and str(row[1]).strip() == str(user_name):
+                    is_match = True
+
+                if not is_match:
                     continue
 
-                date_str = row[2]
+                if row[5] != "APPROVED":  # Status 5
+                    continue
+
+                date_str = row[2]  # Date 2
                 try:
                     log_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
 
@@ -297,13 +387,13 @@ class HistoryService:
                             break
 
                     if target_week:
-                        subject = row[8] if len(row) >= 9 else "その他"
+                        subject = row[8] if len(row) >= 9 else "その他"  # Subj 8
                         if not subject:
                             subject = "その他"
 
-                        # 時間計算: duration (index 6) を使用
+                        # Duration 6
                         minutes = 0
-                        if row[6] and str(row[6]).isdigit():
+                        if len(row) > 6 and row[6] and str(row[6]).isdigit():
                             minutes = int(row[6])
 
                         target_week["total"] += minutes

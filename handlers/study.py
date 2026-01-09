@@ -80,7 +80,15 @@ def handle_postback(event, action, data):
         return True
 
     elif action == "cancel_study":
-        if GSheetService.cancel_study(user_id):
+        user_name = None
+        try:
+            u = EconomyService.get_user_info(user_id)
+            if u:
+                user_name = u.get("display_name")
+        except:
+            pass
+
+        if GSheetService.cancel_study(user_id, user_name):
             line_bot_api.reply_message(
                 event.reply_token,
                 TextSendMessage(text="勉強記録を取り消しました。"),
@@ -178,7 +186,15 @@ def handle_postback(event, action, data):
         now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
         current_time = now.strftime("%H:%M:%S")
 
-        result = GSheetService.update_end_time(user_id, current_time)
+        user_name = None
+        try:
+            u = EconomyService.get_user_info(user_id)
+            if u:
+                user_name = u.get("display_name")
+        except:
+            pass
+
+        result = GSheetService.update_end_time(user_id, current_time, user_name)
         if result:
             start_time_str = result["start_time"]
             try:
@@ -228,10 +244,30 @@ def handle_postback(event, action, data):
                     ),
                 )
         else:
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text="あれ？「勉強開始」の記録が見つからないよ？"),
-            )
+            # 終了処理に失敗した場合、既に完了(PENDING)している可能性をチェック
+            pending = GSheetService.get_user_latest_pending_session(user_id, user_name)
+            if pending:
+                # 自動終了などで既にPENDING状態の場合、コメント入力へ誘導
+                user_states[user_id] = {
+                    "state": "WAITING_COMMENT",
+                    "row_index": pending["row_index"],
+                    "minutes": pending["minutes"],
+                    "subject": pending["subject"],
+                    "start_time": pending["start_time"],
+                }
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text="前回の勉強は自動終了していたみたい！\nお疲れ様✨\n\n成果を一言で教えてくれる？"
+                    ),
+                )
+            else:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text="あれ？「勉強開始」の記録が見つからないよ？\n(もしユーザー切替を使っていたら、もう一度切替操作をしてみてね)"
+                    ),
+                )
         return True
 
     elif action == "study_reject":
@@ -381,11 +417,22 @@ def handle_postback(event, action, data):
 def handle_message(event, text):
     user_id = event.source.user_id
 
+    # Resolve User Name for fallback
+    user_name = None
+    try:
+        u = EconomyService.get_user_info(user_id)
+        if u:
+            user_name = u.get("display_name")
+    except:
+        pass
+
     # 状態チェック (メモリ上にない場合はDBから復元を試みる)
     state_data = user_states.get(user_id)
     if not state_data:
         # DBからPENDING状態のセッションを探す（タイムアウト後のコメント待ちなど）
-        pending_session = GSheetService.get_user_latest_pending_session(user_id)
+        pending_session = GSheetService.get_user_latest_pending_session(
+            user_id, user_name
+        )
         if pending_session:
             user_states[user_id] = pending_session
             state_data = pending_session

@@ -253,15 +253,12 @@ class StatusService:
                                 "flex": 1,
                                 "align": "center",
                             },
-                            # 画像ではなく、テキストバッジでランクを表示する場合の例
                             {
-                                "type": "text",
-                                "text": rank_badge_text,
-                                "color": rank_badge_color,
+                                "type": "image",
+                                "url": r_img_url,
                                 "size": "xs",
-                                "weight": "bold",
+                                "aspectMode": "fit",
                                 "flex": 1,
-                                "align": "center",
                             },
                             {
                                 "type": "text",
@@ -300,11 +297,8 @@ class StatusService:
                 else:
                     m_total = int(my_rank_data.get("total_study_time", 0))
                     m_rank_info = StatusService.get_rank_info(m_total)
-
-                # ユーザー名の横に表示するテキスト勲章 (例: [S])
-                m_rank_char = m_rank_info["name"].split(":")[0].replace("Rank ", "")
-                m_rank_badge_text = f"[{m_rank_char}]"
-                m_rank_badge_color = m_rank_info["color"]
+                
+                m_img_url = f"{app_url}/static/medals/{m_rank_info['img']}"
 
                 ranking_contents.append(
                     {"type": "separator", "margin": "sm", "color": "#444444"}
@@ -325,13 +319,11 @@ class StatusService:
                                 "align": "center",
                             },
                             {
-                                "type": "text",
-                                "text": m_rank_badge_text,
-                                "color": m_rank_badge_color,
+                                "type": "image",
+                                "url": m_img_url,
                                 "size": "xs",
-                                "weight": "bold",
+                                "aspectMode": "fit",
                                 "flex": 1,
-                                "align": "center",
                             },
                             {
                                 "type": "text",

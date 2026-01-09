@@ -56,9 +56,24 @@ class GSheetService:
             return False
 
         try:
-            # A:ID, B:名前, C:日付, D:開始, E:終了, F:ステータス, G:Duration, H:Rank, I:Subject
+            # ユーザー指定順序に対応:
+            # A:display_name, B:date, C:start_time, D:end_time, E:status,
+            # F:duration_min, G:rank_score, H:subject, I:comment, J:concentration
+            # K:user_id (System ID for tracking)
             sheet.append_row(
-                [user_id, user_name, today, time, "", "STARTED", "", "", subject]
+                [
+                    user_name,  # A: display_name
+                    today,  # B: date
+                    time,  # C: start_time
+                    "",  # D: end_time
+                    "STARTED",  # E: status
+                    "",  # F: duration_min
+                    "",  # G: rank_score
+                    subject,  # H: subject
+                    "",  # I: comment
+                    "",  # J: concentration
+                    user_id,  # K: user_id
+                ]
             )
             return True
         except Exception as e:
@@ -66,7 +81,7 @@ class GSheetService:
             return False
 
     @staticmethod
-    def cancel_study(user_id):
+    def cancel_study(user_id, user_name=None):
         """学習記録をキャンセル（削除またはステータス変更）"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
@@ -75,19 +90,32 @@ class GSheetService:
         all_records = sheet.get_all_values()
         target_row = None
 
-        # 後ろから検索して、まだ終了していない(STARTED)記録を探す
+        # 後ろから検索
+        # IDがK列(index 10)にあるか、NameがA列(index 0)にあるか確認
         for i in range(len(all_records), 0, -1):
             row = all_records[i - 1]
-            # ID一致 かつ 終了時刻(E列=index4)が空
-            if len(row) >= 5 and row[0] == user_id and row[4] == "":
+            if len(row) < 5:
+                continue
+
+            # 判定ロジック
+            is_match = False
+            # ID check (Index 10)
+            if len(row) >= 11 and str(row[10]) == str(user_id):
+                is_match = True
+            # Fallback Name check (Index 0)
+            elif user_name and str(row[0]) == str(user_name):
+                is_match = True
+            # Legacy check (if row has ID at 0? No, unsafe to assume)
+
+            # End Time (Index 3) が空なら対象
+            if is_match and row[3] == "":
                 target_row = i
                 break
 
         if target_row:
             try:
-                # 行ごと削除するのが一番きれいだが、行番号がずれるリスクがあるため
-                # ステータスを "CANCELLED" に変更する
-                sheet.update_cell(target_row, 6, "CANCELLED")
+                # Status is Index 4 (E列)
+                sheet.update_cell(target_row, 5, "CANCELLED")
                 return True
             except Exception as e:
                 print(f"Cancel Study Error: {e}")
@@ -95,7 +123,7 @@ class GSheetService:
         return False
 
     @staticmethod
-    def update_end_time(user_id, end_time):
+    def update_end_time(user_id, end_time, user_name=None):
         """終了時刻を study_log シートに更新"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
@@ -107,23 +135,40 @@ class GSheetService:
         # 後ろから検索
         for i in range(len(all_records), 0, -1):
             row = all_records[i - 1]
-            # ID一致 かつ 終了時刻(E列=index4)が空
-            if len(row) >= 5 and row[0] == user_id and row[4] == "":
-                target_row = i
-                break
+            if len(row) < 5:
+                continue
+
+            # Match Logic
+            is_match = False
+            if len(row) >= 11 and str(row[10]).strip() == str(user_id):
+                is_match = True
+            elif user_name and str(row[0]).strip() == str(user_name):
+                is_match = True
+
+            # EndTime (IDX 3), Status (IDX 4)
+            if is_match:
+                end_val = str(row[3]).strip()
+                status_val = str(row[4]).strip()
+
+                if end_val == "" and status_val == "STARTED":
+                    target_row = i
+                    break
 
         if target_row:
-            # E列(5):終了時刻, F列(6):ステータス
-            sheet.update_cell(target_row, 5, end_time)
-            sheet.update_cell(target_row, 6, "PENDING")
+            # D列(4):終了時刻, E列(5):ステータス
+            sheet.update_cell(target_row, 4, end_time)
+            sheet.update_cell(target_row, 5, "PENDING")
 
-            # 教科(I列=index8)を取得
+            # Subject is Index 7 (H列)
             subject = ""
-            if len(all_records[target_row - 1]) >= 9:
-                subject = all_records[target_row - 1][8]
+            if len(all_records[target_row - 1]) >= 8:
+                subject = all_records[target_row - 1][7]
+
+            # Start Time is Index 2 (C列)
+            start_time = all_records[target_row - 1][2]
 
             return {
-                "start_time": all_records[target_row - 1][3],
+                "start_time": start_time,
                 "row_index": target_row,
                 "subject": subject,
             }
@@ -171,16 +216,20 @@ class GSheetService:
             records = sheet.get_all_values()
             # ヘッダー飛ばす
             for i, row in enumerate(records[1:], start=2):
-                # F列(index 5)が "PENDING"
-                if len(row) >= 6 and row[5] == "PENDING":
+                if len(row) < 5:
+                    continue
+                # Status (IDX 4)
+                if row[4] == "PENDING":
+                    # ID (IDX 10) or Name (IDX 0)
+                    uid = row[10] if len(row) >= 11 else ""
                     pending.append(
                         {
                             "row_index": i,
-                            "user_id": row[0],
-                            "user_name": row[1],
-                            "date": row[2],
-                            "start_time": row[3],
-                            "end_time": row[4],
+                            "user_id": uid,
+                            "user_name": row[0],  # Name
+                            "date": row[1],  # Date
+                            "start_time": row[2],  # Start
+                            "end_time": row[3],  # End
                         }
                     )
         except Exception as e:
@@ -188,7 +237,7 @@ class GSheetService:
         return pending
 
     @staticmethod
-    def get_user_latest_pending_session(user_id):
+    def get_user_latest_pending_session(user_id, user_name=None):
         """ユーザーの最新のPENDING（コメント待ち）セッションを取得"""
         sheet = GSheetService.get_worksheet("study_log")
         if not sheet:
@@ -199,18 +248,30 @@ class GSheetService:
         # 後ろから検索
         for i in range(len(all_records), 0, -1):
             row = all_records[i - 1]
-            # ID一致 かつ Status(F列=5)が"PENDING"
-            if len(row) >= 6 and row[0] == user_id and row[5] == "PENDING":
-                # コメント(J列=9)がまだ空であることを確認
+            if len(row) < 6:
+                continue
+
+            is_match = False
+            # ID (A=0)
+            if str(row[0]).strip() == str(user_id):
+                is_match = True
+            # Name (B=1)
+            elif user_name and str(row[1]).strip() == str(user_name):
+                is_match = True
+
+            # Status (F=IDX 5) == PENDING
+            if is_match and row[5] == "PENDING":
+                # Comment (J=IDX 9) check
                 comment = row[9] if len(row) >= 10 else ""
                 if not comment:
+                    # Duration (G=IDX 6), Subject (I=IDX 8)
+                    dur_str = row[6] if len(row) >= 7 else "0"
+
                     return {
                         "row_index": i,
-                        "start_time": row[3],
-                        "minutes": int(row[6])
-                        if len(row) >= 7 and row[6].isdigit()
-                        else 0,
-                        "subject": row[8] if len(row) >= 9 else "",
+                        "start_time": row[3],  # Start D=3
+                        "minutes": int(dur_str) if dur_str.isdigit() else 0,
+                        "subject": row[8] if len(row) >= 9 else "",  # Subject I=8
                         "state": "WAITING_COMMENT",
                     }
         return None
@@ -222,7 +283,7 @@ class GSheetService:
         if not sheet:
             return False
         try:
-            # 既に承認済みかチェック (F列=6)
+            # Status (F=IDX 5, Column 6)
             current_status = sheet.cell(row_index, 6).value
             if current_status == "APPROVED":
                 return False
@@ -239,7 +300,7 @@ class GSheetService:
         if not sheet:
             return False
         try:
-            # 既に承認済みかチェック (F列=6)
+            # Status (F=IDX 5, Column 6)
             current_status = sheet.cell(row_index, 6).value
             if current_status == "APPROVED":
                 return False
@@ -260,29 +321,24 @@ class GSheetService:
             all_records = sheet.get_all_values()
             expired_sessions = []
 
-            # 現在時刻 (JST)
             now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
 
-            # ヘッダーを除く
             for i in range(1, len(all_records)):
                 row = all_records[i]
-                # A:ID, B:Name, C:Date, D:Start, E:End, F:Status
                 if len(row) < 6:
                     continue
 
-                status = row[5]
-                end_time = row[4]
+                status = row[5]  # IDX 5 status
+                end_time = row[4]  # IDX 4 end_time
 
                 if status == "STARTED" and end_time == "":
-                    # 開始日時を構築
-                    date_str = row[2]  # YYYY-MM-DD
-                    start_time_str = row[3]  # HH:MM:SS
+                    date_str = row[2]  # IDX 2 date
+                    start_time_str = row[3]  # IDX 3 start_time
 
                     try:
                         start_dt = datetime.datetime.strptime(
                             f"{date_str} {start_time_str}", "%Y-%m-%d %H:%M:%S"
                         )
-                        # JST timezone info might be missing in strptime result, assume it is JST because 'now' is JST
                         start_dt = start_dt.replace(
                             tzinfo=datetime.timezone(datetime.timedelta(hours=9))
                         )
@@ -291,23 +347,28 @@ class GSheetService:
                         duration_minutes = int(duration.total_seconds() / 60)
 
                         if duration_minutes >= timeout_minutes:
-                            # 強制終了時刻 (開始 + 90分)
                             force_end_dt = start_dt + datetime.timedelta(
                                 minutes=timeout_minutes
                             )
                             force_end_time_str = force_end_dt.strftime("%H:%M:%S")
 
-                            # シート更新 (行番号は i + 1)
                             row_index = i + 1
+                            # Update End(IDX 4 -> Col 5)
+                            # Update Status(IDX 5 -> Col 6)
                             sheet.update_cell(row_index, 5, force_end_time_str)
                             sheet.update_cell(row_index, 6, "PENDING")
 
+                            # UID IDX 0 (A)
+                            uid = row[0]
+
                             expired_sessions.append(
                                 {
-                                    "user_id": row[0],
+                                    "user_id": uid,
                                     "row_index": row_index,
                                     "minutes": timeout_minutes,
-                                    "subject": row[8] if len(row) > 8 else "",
+                                    "subject": row[8]
+                                    if len(row) > 8
+                                    else "",  # Subject I=8
                                     "start_time": start_time_str,
                                 }
                             )
