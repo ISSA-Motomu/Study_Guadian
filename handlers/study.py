@@ -441,6 +441,27 @@ def handle_message(event, text):
         state = state_data.get("state")
 
         if state == "WAITING_COMMENT":
+            # 無効なコマンド入力をチェック（誤爆防止）
+            reserved_commands = [
+                "勉強開始",
+                "勉強終了",
+                "ショップ",
+                "ヘルプ",
+                "ステータス",
+                "ジョブ",
+                "ミッション",
+                "ランキング",
+                "メニュー",
+            ]
+            if text in reserved_commands:
+                line_bot_api.reply_message(
+                    event.reply_token,
+                    TextSendMessage(
+                        text=f"「{text}」は現在受け付けられません。\nまずは今日の勉強の成果（コメント）を入力してください！"
+                    ),
+                )
+                return True
+
             # コメントを受け取り、集中度を聞く
             user_states[user_id]["comment"] = text
             user_states[user_id]["state"] = "WAITING_CONCENTRATION"
