@@ -72,7 +72,7 @@
         "action": {
           "type": "postback",
           "label": "承認する",
-          "data": "action=study_approve&target=${user_id}&minutes=${minutes}&exp=${earned_exp}"
+          "data": "action=study_approve&target=${user_id}&minutes=${minutes}&exp=${earned_exp}&row_id=${row_index}"
         }
       }
     ]

@@ -638,6 +638,7 @@ def finalize_study(event, user_id, state_data, concentration):
                 comment=comment + bonus_msg,
                 concentration=concentration,
                 timestamp=timestamp,
+                row_index=row_index,
             )
             line_bot_api.multicast(
                 admin_ids,
