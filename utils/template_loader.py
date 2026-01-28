@@ -1,7 +1,9 @@
 import json
 import os
 
-TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
+TEMPLATE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "templates", "bot"
+)
 
 
 def load_template(filename, **kwargs):
