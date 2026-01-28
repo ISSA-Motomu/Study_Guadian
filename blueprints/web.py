@@ -116,7 +116,7 @@ def api_start_study():
             except Exception as push_error:
                 print(f"Push Message Error: {push_error}")
                 # LINE通知失敗でも処理は継続する
-            
+
             return jsonify({"status": "ok", "start_time": current_time})
         else:
             return jsonify(

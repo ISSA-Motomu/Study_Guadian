@@ -224,6 +224,7 @@
 
     // 簡易的なサウンド管理
     const sounds = {
+      poweron: new Audio('/static/assets/sounds/Power-on.mp3'),
       click: new Audio('/static/assets/sounds/mouse_click.mp3'),
       select1: new Audio('/static/assets/sounds/select1.mp3'),
       select3: new Audio('/static/assets/sounds/select3.mp3'),
@@ -283,6 +284,10 @@
         }
       },
       async mounted() {
+        // 自動再生ポリシー対策: 初回はユーザーアクションが必要な場合が多いが、
+        // アプリ起動時の演出として再生を試みる
+        playSound('poweron');
+
         await this.initLiff();
         // For development without LIFF ID, uncomment below:
         // await this.fetchUserData("DEBUG_USER"); 
@@ -305,8 +310,8 @@
               const profile = await liff.getProfile();
               this.currentUserId = profile.userId;
 
-              // プロフィール情報の更新（名前・アイコン同期）
-              await fetch('/api/user/update_profile', {
+              // 画像同期処理は非同期で裏で実行し、描画をブロックしない（awaitしない）
+              fetch('/api/user/update_profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -314,7 +319,7 @@
                   display_name: profile.displayName,
                   avatar_url: profile.pictureUrl
                 })
-              });
+              }).catch(e => console.error("Profile sync error:", e));
 
               await this.fetchUserData(this.currentUserId);
               await this.checkActiveSession(this.currentUserId); // 勉強中チェック
