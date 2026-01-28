@@ -1,5 +1,13 @@
 import os
-from flask import Flask, request, abort, render_template, jsonify, session
+from flask import (
+    Flask,
+    request,
+    abort,
+    render_template,
+    jsonify,
+    session,
+    send_from_directory,
+)
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent,
@@ -19,7 +27,7 @@ load_dotenv()
 
 from services.status_service import StatusService
 
-app = Flask(__name__, template_folder="templates")
+app = Flask(__name__, template_folder="templates/html")
 
 
 # --- LIFF / Web App Routes ---
@@ -28,10 +36,9 @@ app = Flask(__name__, template_folder="templates")
 @app.route("/app/dashboard")
 def liff_dashboard():
     """LIFFのトップページ (ダッシュボード) を返す"""
-    # テンプレートフォルダを一時的に切り替えるか、レンダリング時にパス指定
-    # Flaskはデフォルトでtemplatesを探すので、templates/liff/index.html を指定可能
-    # template_folderの指定により "templates/html" がルートになっているため、上位階層に戻って指定
-    return render_template("liff/index.html")
+    # テンプレートフォルダ外のファイルを返すため、send_from_directoryを使用
+    # カレントディレクトリからの相対パスで templates/liff を指定
+    return send_from_directory("../templates/liff", "index.html")
 
 
 @app.route("/api/user/<user_id>/status")
