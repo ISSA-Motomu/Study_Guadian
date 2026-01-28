@@ -102,16 +102,21 @@ def api_start_study():
 
         if GSheetService.log_activity(user_id, user_name, today, current_time, subject):
             color = study.SUBJECT_COLORS.get(subject, "#27ACB2")
-            bubble = load_template(
-                "study_session.json",
-                subject=subject,
-                start_time=current_time,
-                color=color,
-            )
-            line_bot_api.push_message(
-                user_id,
-                FlexSendMessage(alt_text="勉強中...", contents=bubble),
-            )
+            try:
+                bubble = load_template(
+                    "study_session.json",
+                    subject=subject,
+                    start_time=current_time,
+                    color=color,
+                )
+                line_bot_api.push_message(
+                    user_id,
+                    FlexSendMessage(alt_text="勉強中...", contents=bubble),
+                )
+            except Exception as push_error:
+                print(f"Push Message Error: {push_error}")
+                # LINE通知失敗でも処理は継続する
+            
             return jsonify({"status": "ok", "start_time": current_time})
         else:
             return jsonify(
