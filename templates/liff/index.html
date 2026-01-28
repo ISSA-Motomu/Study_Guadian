@@ -361,7 +361,7 @@
             } catch (e) { console.error(e); }
           }
         },
-        async startStudy(su3ject) {
+        async startStudy(subject) {
           playSound('select1');
           if (!this.currentUserId) return;
 
@@ -429,89 +429,87 @@
             }
           } catch (e) { alert("通信エラー"); }
           this.showMemoConfirm = false;
-          // ...既存のmethodsの下に追加
-          // メモ確認ダイアログを閉じる
-          closeMemoConfirm() {
-            this.showMemoConfirm = false;
-          },
+        },
+        closeMemoConfirm() {
+          this.showMemoConfirm = false;
+        },
               <!-- メモ確認ダイアログ -->
-              <div v-if="showMemoConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeMemoConfirm"></div>
-                <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl overflow-hidden">
-                  <h3 class="text-xl font-bold text-center text-gray-800 mb-6">勉強内容の確認</h3>
-                  <div class="mb-4">
-                    <div class="text-gray-600 text-sm mb-2">今回の勉強内容・メモ</div>
-                    <div class="bg-gray-100 rounded-xl p-3 min-h-[60px] text-gray-800 whitespace-pre-line">{{ memoToSend || '（未入力）' }}</div>
-                  </div>
-                  <div class="flex gap-4 mt-6">
-                    <button @click="confirmFinishStudy" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl">記録して終了</button>
-                    <button @click="closeMemoConfirm" class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl">戻る</button>
+              < div v-if= "showMemoConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4" >
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeMemoConfirm" ></div >
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl overflow-hidden">
+          <h3 class="text-xl font-bold text-center text-gray-800 mb-6">勉強内容の確認</h3>
+          <div class="mb-4">
+            <div class="text-gray-600 text-sm mb-2">今回の勉強内容・メモ</div>
+            <div class="bg-gray-100 rounded-xl p-3 min-h-[60px] text-gray-800 whitespace-pre-line">{{ memoToSend || '（未入力）'}}</div>
+          </div>
+          <div class="flex gap-4 mt-6">
+            <button @click="confirmFinishStudy" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl">記録して終了</button>
+          <button @click="closeMemoConfirm" class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl">戻る</button>
                   </div >
                 </div >
               </div >
-        },
-        async cancelStudy() {
-          if (!confirm("本当に記録を取り消しますか？\n(この時間はカウントされません)")) return;
-          playSound('click');
-          try {
-            const res = await fetch('/api/study/cancel', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user_id: this.currentUserId })
-            });
-            const json = await res.json();
-            if (json.status === 'ok') {
-              alert("記録を取り消しました。");
-              liff.closeWindow();
-            } else {
-              alert("取消に失敗しました");
-            }
-          } catch (e) { alert("通信エラー"); }
-        },
-        async pauseStudy() {
-          playSound('click');
-          if (!confirm("勉強を一時中断しますか？\n(時間はここでストップします)")) return;
-
-          try {
-            const res = await fetch('/api/study/pause', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user_id: this.currentUserId })
-            });
-            const json = await res.json();
-            if (json.status === 'ok') {
-              alert(`一時中断しました。\n(経過時間: ${json.minutes}分)\n再開はLINEメニューから行ってください。`);
-              liff.closeWindow();
-            } else {
-              alert("中断処理に失敗しました");
-              liff.closeWindow();
-            }
-          } catch (e) {
-            alert("通信エラー");
-            liff.closeWindow();
-          }
-        },
-        async checkActiveSession(userId) {
-          try {
-            const res = await fetch(`/api/user/${userId}/active_session`);
-            const json = await res.json();
-            if (json.status === 'ok' && json.active) {
-              // 復帰処理
-              this.currentSubject = json.data.subject;
-              this.currentSubjectColor = this.subjects[json.data.subject] || '#000';
-              const startTimeParts = json.data.start_time.split(':');
-              const now = new Date();
-              const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
-                Number(startTimeParts[0]), Number(startTimeParts[1]), Number(startTimeParts[2]));
-              // 日付跨ぎ対応（簡易）
-              if (startDate > now) startDate.setDate(startDate.getDate() - 1);
-
-              this.startTime = startDate;
-              this.view = 'timer';
-              this.startTimerTick();
-            }
-          } catch (e) { console.error(e); }
+      async cancelStudy() {
+      if (!confirm("本当に記録を取り消しますか？\n(この時間はカウントされません)")) return;
+      playSound('click');
+      try {
+        const res = await fetch('/api/study/cancel', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: this.currentUserId })
+        });
+        const json = await res.json();
+        if (json.status === 'ok') {
+          alert("記録を取り消しました。");
+          liff.closeWindow();
+        } else {
+          alert("取消に失敗しました");
         }
+      } catch (e) { alert("通信エラー"); }
+    },
+        async pauseStudy() {
+      playSound('click');
+      if (!confirm("勉強を一時中断しますか？\n(時間はここでストップします)")) return;
+
+      try {
+        const res = await fetch('/api/study/pause', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: this.currentUserId })
+        });
+        const json = await res.json();
+        if (json.status === 'ok') {
+          alert(`一時中断しました。\n(経過時間: ${json.minutes}分)\n再開はLINEメニューから行ってください。`);
+          liff.closeWindow();
+        } else {
+          alert("中断処理に失敗しました");
+          liff.closeWindow();
+        }
+      } catch (e) {
+        alert("通信エラー");
+        liff.closeWindow();
+      }
+    },
+        async checkActiveSession(userId) {
+      try {
+        const res = await fetch(`/api/user/${userId}/active_session`);
+        const json = await res.json();
+        if (json.status === 'ok' && json.active) {
+          // 復帰処理
+          this.currentSubject = json.data.subject;
+          this.currentSubjectColor = this.subjects[json.data.subject] || '#000';
+          const startTimeParts = json.data.start_time.split(':');
+          const now = new Date();
+          const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+            Number(startTimeParts[0]), Number(startTimeParts[1]), Number(startTimeParts[2]));
+          // 日付跨ぎ対応（簡易）
+          if (startDate > now) startDate.setDate(startDate.getDate() - 1);
+
+          this.startTime = startDate;
+          this.view = 'timer';
+          this.startTimerTick();
+        }
+      } catch (e) { console.error(e); }
+    }
       }
     }).mount('#app')
   </script>
