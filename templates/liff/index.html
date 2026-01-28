@@ -57,6 +57,12 @@
             {{ timerDisplay }}
           </div>
 
+          <!-- メモ欄追加 -->
+          <div class="mb-6">
+            <textarea v-model="studyMemo" rows="3" placeholder="勉強内容や気づきメモ..."
+              class="w-full rounded-xl border border-gray-200 p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none"></textarea>
+          </div>
+
           <div class="flex flex-col gap-4">
             <div class="flex justify-center gap-4">
               <button @click="finishStudy"
@@ -249,7 +255,10 @@
           currentSubjectColor: '#000',
           startTime: null,
           timerInterval: null,
-          timerDisplay: '00:00:00'
+          timerDisplay: '00:00:00',
+          studyMemo: '',
+          showMemoConfirm: false,
+          memoToSend: ''
         }
       },
       computed: {
@@ -280,6 +289,18 @@
             if (liff.isLoggedIn()) {
               const profile = await liff.getProfile();
               this.currentUserId = profile.userId;
+
+              // プロフィール情報の更新（名前・アイコン同期）
+              await fetch('/api/user/update_profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  user_id: profile.userId,
+                  display_name: profile.displayName,
+                  avatar_url: profile.pictureUrl
+                })
+              });
+
               await this.fetchUserData(this.currentUserId);
               await this.checkActiveSession(this.currentUserId); // 勉強中チェック
             } else {
@@ -387,23 +408,47 @@
           }, 1000);
         },
         async finishStudy() {
-          if (!confirm("勉強を終了して記録しますか？")) return;
-          playSound('click');
+          // メモ内容の確認ダイアログ
+          this.memoToSend = this.studyMemo;
+          this.showMemoConfirm = true;
+        },
+        async confirmFinishStudy() {
+          playSound('levelup'); // 終了時の音声
           try {
             const res = await fetch('/api/study/finish', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user_id: this.currentUserId })
+              body: JSON.stringify({ user_id: this.currentUserId, memo: this.memoToSend })
             });
             const json = await res.json();
             if (json.status === 'ok') {
-              // 獲得報酬の表示などは本来ここで行う
-              alert(`お疲れ様でした！\n${json.data.minutes}分 勉強しました。\n獲得コイン: ${json.data.earned_coins} pt`);
+              alert(`お疲れ様でした！\n${json.minutes}分 勉強しました。`);
               liff.closeWindow();
             } else {
               alert("終了処理に失敗しました: " + json.message);
             }
           } catch (e) { alert("通信エラー"); }
+          this.showMemoConfirm = false;
+          // ...既存のmethodsの下に追加
+          // メモ確認ダイアログを閉じる
+          closeMemoConfirm() {
+            this.showMemoConfirm = false;
+          },
+              <!-- メモ確認ダイアログ -->
+              <div v-if="showMemoConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeMemoConfirm"></div>
+                <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl overflow-hidden">
+                  <h3 class="text-xl font-bold text-center text-gray-800 mb-6">勉強内容の確認</h3>
+                  <div class="mb-4">
+                    <div class="text-gray-600 text-sm mb-2">今回の勉強内容・メモ</div>
+                    <div class="bg-gray-100 rounded-xl p-3 min-h-[60px] text-gray-800 whitespace-pre-line">{{ memoToSend || '（未入力）' }}</div>
+                  </div>
+                  <div class="flex gap-4 mt-6">
+                    <button @click="confirmFinishStudy" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl">記録して終了</button>
+                    <button @click="closeMemoConfirm" class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl">戻る</button>
+                  </div >
+                </div >
+              </div >
         },
         async cancelStudy() {
           if (!confirm("本当に記録を取り消しますか？\n(この時間はカウントされません)")) return;

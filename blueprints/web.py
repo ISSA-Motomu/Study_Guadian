@@ -21,6 +21,29 @@ def liff_dashboard():
     return send_from_directory(directory, "index.html")
 
 
+@web_bp.route("/api/user/update_profile", methods=["POST"])
+def api_update_profile():
+    """LIFFから取得した最新のプロフィール情報でDBを更新する"""
+    data = request.json
+    user_id = data.get("user_id")
+    display_name = data.get("display_name")
+    avatar_url = data.get("avatar_url")
+
+    if not user_id:
+        return jsonify({"status": "error", "message": "Missing user_id"}), 400
+
+    # ユーザーが存在するか確認、いなければ登録フローが必要だが
+    # LIFFが開けている時点で登録済みか、もしくはここで登録してもよいが
+    # 基本は登録済みのはず。
+
+    if EconomyService.update_user_profile(user_id, display_name, avatar_url):
+        return jsonify({"status": "ok"})
+    else:
+        # 更新失敗（ユーザーがいない場合など）
+        # 新規登録を試みる？ 今回はシンプルにエラーもしくは無視
+        return jsonify({"status": "error", "message": "Update failed"}), 500
+
+
 @web_bp.route("/api/user/<user_id>/status")
 def api_user_status(user_id):
     """ユーザーのステータス情報をJSONで返すAPI"""
@@ -36,7 +59,7 @@ def api_user_status(user_id):
         rank_info = StatusService.get_rank_info(total_minutes_val)
 
         response_data = {
-            "name": user_info.get("name", "Unknown"),
+            "name": user_info.get("display_name", "Unknown"),
             "level": int(user_info.get("level", 1)),
             "exp": int(user_info.get("exp", 0)),
             "next_exp": int(user_info.get("level", 1)) * 100 + 500,
@@ -111,6 +134,7 @@ def api_active_session():
 def api_finish_study():
     data = request.json
     user_id = data.get("user_id")
+    memo = data.get("memo", "")
 
     now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9)))
     current_time = now.strftime("%H:%M:%S")
@@ -120,6 +144,19 @@ def api_finish_study():
 
     result = GSheetService.update_end_time(user_id, current_time, user_name)
     if result:
+        # メモを保存
+        try:
+            # study_logの該当行にmemoカラムがあれば書き込む
+            sheet = GSheetService.get_worksheet("study_log")
+            if sheet:
+                headers = sheet.row_values(1)
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+                idx_memo = col_map.get("memo")
+                if idx_memo is not None:
+                    sheet.update_cell(result["row_index"], idx_memo + 1, memo)
+        except Exception as e:
+            print(f"Memo保存エラー: {e}")
+
         start_time_str = result["start_time"]
         try:
             start_dt = datetime.datetime.strptime(start_time_str, "%H:%M:%S")

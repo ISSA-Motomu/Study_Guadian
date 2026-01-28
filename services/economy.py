@@ -118,6 +118,34 @@ class EconomyService:
             return False
 
     @staticmethod
+    def update_user_profile(user_id, display_name, avatar_url):
+        """ユーザーの表示名とアイコンURLを更新（動的カラムマッピング）"""
+        sheet = GSheetService.get_worksheet("users")
+        if not sheet:
+            return False
+
+        try:
+            cell = sheet.find(user_id)
+            if cell:
+                headers = sheet.row_values(1)
+                col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+                idx_name = col_map.get("display_name")
+                # スプレッドシート側で avatar_url カラムがなくても name が変われば更新したい
+                if idx_name is not None:
+                    sheet.update_cell(cell.row, idx_name + 1, display_name)
+
+                idx_avatar = col_map.get("avatar_url")
+                if idx_avatar is not None and avatar_url:
+                    sheet.update_cell(cell.row, idx_avatar + 1, avatar_url)
+
+                return True
+            return False
+        except Exception as e:
+            print(f"Update Profile Error: {e}")
+            return False
+
+    @staticmethod
     def update_user_rank(user_id, rank):
         """ユーザーのランクを更新（動的カラムマッピング）"""
         sheet = GSheetService.get_worksheet("users")
