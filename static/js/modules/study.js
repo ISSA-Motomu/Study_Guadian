@@ -98,7 +98,8 @@ export const studyModule = {
       this.showMemoConfirm = true;
     },
     async confirmFinishStudy() {
-      // Improve UX: Close modal immediately to prevent freezing feeling
+      console.log("confirmFinishStudy called");
+
       this.showMemoConfirm = false;
 
       playSound('levelup');
