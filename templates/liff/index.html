@@ -27,6 +27,52 @@
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
+    /* RPG Effects */
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translate(0, 0) scale(0.95);
+      }
+
+      25% {
+        transform: translate(-5px, 5px) scale(0.95);
+      }
+
+      50% {
+        transform: translate(5px, -5px) scale(0.95);
+      }
+
+      75% {
+        transform: translate(-5px, -5px) scale(0.95);
+      }
+    }
+
+    .shake {
+      animation: shake 0.2s ease-in-out;
+    }
+
+    @keyframes fly-up {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-50px) scale(1.5);
+      }
+    }
+
+    .animate-fly-up {
+      animation: fly-up 0.8s ease-out forwards;
+    }
+
+    .text-stroke {
+      -webkit-text-stroke: 1px rgba(0, 0, 0, 0.5);
+      text-shadow: 2px 2px 0 #000;
+    }
+
     .progress-bar {
       transition: width 1s ease-in-out;
     }
@@ -106,432 +152,487 @@
         </div>
       </div>
 
-      <!-- Shop View -->
-      <div v-else-if="view === 'game'" class="pb-24">
-        <div class="flex justify-between items-center mb-6">
-          <div class="flex items-center gap-2">
-            <h2 class="text-white text-2xl font-bold drop-shadow-sm">SHOP</h2>
-          </div>
-          <div class="bg-white/90 backdrop-blur rounded-full px-4 py-1 text-sm font-bold text-yellow-600 shadow-sm">
-            💰 {{ (user.xp || 0).toLocaleString() }} XP
-          </div>
-        </div>
-
-        <div class="glass-panel p-6 mb-6">
-          <h3 class="font-bold text-gray-700 mb-2">RPGモード準備中...</h3>
-          <p class="text-sm text-gray-400">現在ショップ機能のみ利用可能です。</p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4">
-          <div v-for="item in shopItems" :key="item.key" @click="openBuyModal(item)"
-            class="bg-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between h-40 relative overflow-hidden">
-            <div
-              class="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-bl-xl shadow-sm">
-              {{ item.cost }} XP
-            </div>
-            <div class="text-4xl text-center mt-4">✨</div>
-            <div>
-              <div class="font-bold text-gray-800 text-sm leading-tight mb-1">{{ item.name }}</div>
-              <div class="text-[10px] text-gray-400 leading-tight line-clamp-2 h-8">{{ item.description }}</div>
-            </div>
-            <button class="mt-2 w-full py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-lg">
-              交換する
-            </button>
+      <!-- Game View (Battle RPG) -->
+      <div v-else-if="view === 'game'" class="pb-24 relative overflow-hidden h-[calc(100vh-8rem)]">
+        <!-- Background Effect -->
+        <div class="absolute inset-0 z-0 bg-gradient-to-b from-slate-800 to-slate-900">
+          <div class="absolute top-10 left-10 w-20 h-20 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+          <div
+            class="absolute bottom-20 right-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl animate-pulse delay-1000">
           </div>
         </div>
 
-        <button @click="view = 'dashboard'"
-          class="mt-8 w-full py-3 bg-white/20 text-white font-bold rounded-full backdrop-blur-sm">
-          戻る
-        </button>
-
-        <!-- Buy Modal -->
-        <div v-if="showBuyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showBuyModal = false"></div>
-          <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl">
-            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ selectedItem?.name }}</h3>
-            <div class="text-yellow-600 font-bold mb-4">価格: {{ selectedItem?.cost }} XP</div>
-
-            <div class="mb-4">
-              <label class="block text-xs text-gray-400 mb-1">使い道・理由（親へのメッセージ）</label>
-              <textarea v-model="buyComment"
-                class="w-full bg-gray-50 rounded-xl p-3 text-sm border border-gray-200 focus:outline-none focus:border-indigo-400"
-                rows="3" placeholder="例: 今週末マリオやる！"></textarea>
-            </div>
-
-            <div class="flex gap-3">
-              <button @click="confirmBuy"
-                class="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform">
-                購入する
-              </button>
-              <button @click="showBuyModal = false" class="flex-1 bg-gray-100 text-gray-500 font-bold py-3 rounded-xl">
-                やめる
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Admin View -->
-      <div v-else-if="view === 'admin'" class="pb-24">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-white text-2xl font-bold drop-shadow-sm">ADMIN</h2>
-          <button @click="view = 'dashboard'; adminViewMode = 'menu'"
-            class="bg-white/20 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
-            Exit
-          </button>
-        </div>
-
-        <!-- Menu Mode -->
-        <div v-if="adminViewMode === 'menu'" class="glass-panel p-6 mb-6">
-          <h3 class="font-bold text-gray-700 mb-4">管理メニュー</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <button
-              class="bg-indigo-50 p-4 rounded-xl text-indigo-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-indigo-100 transition-colors"
-              @click="adminViewMode = 'addTask'">
-              <span>📋</span>タスク追加
-            </button>
-            <button
-              class="bg-pink-50 p-4 rounded-xl text-pink-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-pink-100 transition-colors"
-              @click="adminViewMode = 'addItem'">
-              <span>🛒</span>商品追加
-            </button>
-            <button
-              class="bg-yellow-50 p-4 rounded-xl text-yellow-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-yellow-100 transition-colors"
-              @click="fetchAdminUsers(); adminViewMode = 'grantPoints'">
-              <span>💰</span>ポイント付与
-            </button>
-            <button
-              class="bg-green-50 p-4 rounded-xl text-green-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-green-100 transition-colors"
-              @click="showAlert('履歴確認機能はまだ実装されていません')">
-              <span>📊</span>履歴確認
-            </button>
-          </div>
-          <p class="text-xs text-gray-400 mt-4 text-center">※承認機能などはLINEチャットからも操作可能です。</p>
-        </div>
-
-        <!-- Add Task Mode -->
-        <div v-if="adminViewMode === 'addTask'" class="glass-panel p-6 animate-fade-in-up">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-gray-700">タスク追加</h3>
-            <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">タイトル</label>
-              <input v-model="adminForm.taskTitle" type="text"
-                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-500"
-                placeholder="例: お風呂掃除">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">報酬 (Pt)</label>
-              <input v-model.number="adminForm.taskReward" type="number"
-                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-500">
-            </div>
-            <button @click="adminCreateTask"
-              class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 mt-2 active:scale-95 transition-transform">作成</button>
-          </div>
-        </div>
-
-        <!-- Add Item Mode -->
-        <div v-if="adminViewMode === 'addItem'" class="glass-panel p-6 animate-fade-in-up">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-gray-700">商品追加</h3>
-            <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">商品名</label>
-              <input v-model="adminForm.itemName" type="text"
-                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500"
-                placeholder="例: ゲーム1時間">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">コスト (Pt)</label>
-              <input v-model.number="adminForm.itemCost" type="number"
-                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">説明 (任意)</label>
-              <input v-model="adminForm.itemDesc" type="text"
-                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500">
-            </div>
-            <button @click="adminCreateItem"
-              class="w-full py-3 bg-pink-600 text-white font-bold rounded-xl shadow-lg shadow-pink-200 mt-2 active:scale-95 transition-transform">追加</button>
-          </div>
-        </div>
-
-        <!-- Grant Points Mode -->
-        <div v-if="adminViewMode === 'grantPoints'" class="glass-panel p-6 animate-fade-in-up">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-gray-700">ポイント付与</h3>
-            <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
-          </div>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">対象ユーザー</label>
-              <select v-model="adminForm.grantTarget"
-                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-yellow-500 bg-white">
-                <option v-for="u in adminUsers" :key="u.user_id" :value="u.user_id">{{ u.user_name }}</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">付与額</label>
-              <input v-model.number="adminForm.grantAmount" type="number"
-                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-yellow-500">
-            </div>
-            <button @click="adminGrantPoints"
-              class="w-full py-3 bg-yellow-500 text-white font-bold rounded-xl shadow-lg shadow-yellow-200 mt-2 active:scale-95 transition-transform">付与する</button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Data View -->
-      <div v-else-if="view === 'data'" class="pb-24">
-        <!-- Avatar & Rank Section -->
-        <div class="text-center mb-6">
-          <div class="relative inline-block">
-            <div class="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-xl">
-              <img :src="user.avatar_url || 'https://via.placeholder.com/150'"
-                class="w-full h-full rounded-full object-cover">
-            </div>
-            <div
-              class="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full shadow border-2 border-white">
-              Lx.{{ user.level }}
-            </div>
-          </div>
-          <h1 class="text-white text-xl font-bold mt-3 shadow-sm">{{ user.name }}</h1>
-          <div class="inline-block bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full mt-1">
-            {{ user.rank_name }}
-          </div>
-        </div>
-
-        <div class="glass-panel p-6 mb-6">
-          <h3 class="font-bold text-gray-700 mb-4">分析（準備中...）</h3>
-          <p class="text-sm text-gray-400">グラフなどをここに表示します</p>
-        </div>
-
-        <!-- Admin Toggle (Visible only to ADMIN) -->
-        <button v-if="user.role === 'ADMIN'" @click="view = 'admin'"
-          class="w-full py-3 bg-white/20 text-white text-sm rounded-xl font-bold backdrop-blur-sm">
-          🔧 Admin Mode
-        </button>
-      </div>
-
-      <!-- Study View (Default) -->
-      <div v-else class="pb-24">
-        <!-- Main Stats Card -->
-        <div class="glass-panel p-6 mb-6 transform transition-all hover:scale-[1.02]">
-          <div class="flex justify-between items-center mb-4">
-            <div class="text-gray-500 text-sm font-bold">TOTAL STUDY</div>
-            <div class="text-indigo-600 text-2xl font-black">{{ user.total_hours }}<span
-                class="text-sm text-gray-400 ml-1">h</span></div>
-          </div>
-
-          <!-- EXP Bar -->
-          <div class="mb-2 flex justify-between text-xs font-bold text-gray-500">
-            <span>EXP</span>
-            <span>{{ user.exp }} / {{ user.next_exp }}</span>
-          </div>
-          <div class="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
-            <div class="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full progress-bar"
-              :style="{ width: expPercentage + '%' }"></div>
-          </div>
-
-          <!-- Coins -->
-          <div class="flex items-center justify-between border-t border-gray-100 pt-4">
-            <div class="flex items-center text-gray-600 font-bold">
-              <span class="text-xl mr-2">💰</span>
-              <span>XP</span>
-            </div>
-            <div class="text-xl font-bold text-yellow-600">{{ (user.xp || 0).toLocaleString() }} XP</div>
-          </div>
-        </div>
-
-        <!-- Weekly Activity Chart (Swipeable) -->
-        <div class="glass-panel p-5 mb-6 select-none relative" @touchstart="onTouchStart" @touchend="onTouchEnd">
-          <h3 class="text-gray-700 font-bold mb-4 flex items-center justify-between">
-            <div class="flex items-center text-sm">
-              <span class="w-1 h-6 bg-pink-500 rounded-full mr-2"></span>
-              {{ weeklyActivityTitle }}
-            </div>
-            <!-- Indicator Dots -->
-            <div class="flex gap-1">
-              <div class="w-2 h-2 rounded-full transition-colors"
-                :class="chartMode === 'lastWeek' ? 'bg-pink-500' : 'bg-gray-200'"></div>
-              <div class="w-2 h-2 rounded-full transition-colors"
-                :class="chartMode === 'thisWeek' ? 'bg-pink-500' : 'bg-gray-200'"></div>
-              <div class="w-2 h-2 rounded-full transition-colors"
-                :class="chartMode === 'subjects' ? 'bg-pink-500' : 'bg-gray-200'"></div>
-            </div>
-          </h3>
-
-          <!-- Bar Charts (This/Last Week) -->
-          <div v-if="chartMode !== 'subjects'"
-            class="flex items-end justify-between h-32 px-2 transition-all duration-300">
-            <div v-for="(day, index) in (chartMode === 'thisWeek' ? weeklyData : lastWeekData)" :key="index"
-              class="flex flex-col items-center w-1/7 group">
-              <div class="relative w-3 bg-gray-100 rounded-t-sm h-full flex items-end overflow-hidden">
-                <div class="w-full bg-pink-400 rounded-t-sm transition-all duration-500 group-hover:bg-pink-500"
-                  :style="{ height: day.percent + '%' }"></div>
-              </div>
-              <span
-                class="text-[9px] text-gray-400 mt-2 font-bold whitespace-nowrap transform -rotate-45 origin-left">{{
-                day.label }}</span>
-            </div>
-          </div>
-
-          <!-- Subject Ratio (Visualized as Horizontal Bars) -->
-          <div v-else class="h-32 px-2 overflow-y-auto custom-scrollbar flex flex-col justify-center">
-            <div v-for="subj in subjectData" :key="subj.label" class="mb-3">
-              <div class="flex justify-between text-xs font-bold text-gray-600 mb-1">
-                <span>{{ subj.label }}</span>
-                <span>{{ subj.percent }}%</span>
-              </div>
-              <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                <div class="h-full rounded-full shadow-sm"
-                  :style="{ width: subj.percent + '%', backgroundColor: subj.color }"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="text-center text-[10px] text-gray-300 mt-2 font-mono">← Swipe →</div>
-        </div>
-
-        <!-- Menu Grid -->
-        <div class="grid grid-cols-2 gap-4 mb-20">
-          <button @click="openShop"
-            class="glass-panel p-4 flex flex-col items-center justify-center active:scale-95 transition-transform">
-            <span class="text-3xl mb-2">🛒</span>
-            <span class="font-bold text-gray-700">ショップ</span>
-          </button>
-          <button
-            class="glass-panel p-4 flex flex-col items-center justify-center active:scale-95 transition-transform opacity-50">
-            <span class="text-3xl mb-2">⚔️</span>
-            <span class="font-bold text-gray-700">準備中</span>
-          </button>
-        </div>
-        <!-- Study Start Modal -->
-        <div v-if="showStudyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showStudyModal = false"></div>
-          <div class="bg-white rounded-3xl p-6 w-full max-w-md relative z-10 shadow-2xl overflow-hidden">
-            <h3 class="text-2xl font-bold text-center text-gray-800 mb-6 tracking-wide">何を勉強する？</h3>
-
-            <div v-if="studying" class="text-center py-8">
-              <div
-                class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4">
-              </div>
-              <p class="text-gray-600 font-bold">準備中...</p>
-            </div>
-
-            <div v-else class="grid grid-cols-2 gap-4">
-              <button v-for="(color, subject) in subjects" :key="subject" @click="startStudy(subject)"
-                class="relative flex flex-col items-center justify-center h-28 rounded-2xl shadow-md border-2 border-transparent hover:border-indigo-400 group transition-all duration-150 active:scale-95 overflow-hidden cursor-pointer">
-                <div class="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
-                  :style="{ backgroundColor: color }"></div>
-                <div class="text-4xl mb-2 z-10">
-                  <span v-if="subject === '国語'">📕</span>
-                  <span v-else-if="subject === '数学'">📐</span>
-                  <span v-else-if="subject === '英語'">🇬🇧</span>
-                  <span v-else-if="subject === '理科'">🔬</span>
-                  <span v-else-if="subject === '社会'">🌏</span>
-                  <span v-else>📖</span>
-                </div>
-                <span class="font-bold text-lg text-gray-700 z-10">{{ subject }}</span>
-                <span class="text-xs text-gray-400 z-10 mt-1">
-                  <template v-if="subject === '国語'">読解・漢字・作文</template>
-                  <template v-else-if="subject === '数学'">計算・図形・論理</template>
-                  <template v-else-if="subject === '英語'">単語・文法・リスニング</template>
-                  <template v-else-if="subject === '理科'">物理・化学・生物</template>
-                  <template v-else-if="subject === '社会'">歴史・地理・公民</template>
-                  <template v-else>自由記述</template>
-                </span>
-                <div class="absolute bottom-0 left-0 w-full h-1" :style="{ backgroundColor: color }"></div>
-              </button>
-            </div>
-
-            <button @click="showStudyModal = false"
-              class="mt-8 w-full py-3 bg-gray-100 rounded-xl text-gray-500 font-bold active:bg-gray-200 tracking-wide">
-              キャンセル
-            </button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- メモ確認ダイアログ -->
-    <div v-if="showMemoConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeMemoConfirm"></div>
-      <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl overflow-hidden">
-        <h3 class="text-xl font-bold text-center text-gray-800 mb-6">勉強内容の確認</h3>
-        <div class="mb-4">
-          <div class="text-gray-600 text-sm mb-2">今回の勉強内容・メモ</div>
-          <div class="bg-gray-100 rounded-xl p-3 min-h-[60px] text-gray-800 whitespace-pre-line">{{ memoToSend ||
-            '（未入力）' }}</div>
-        </div>
-        <div class="flex gap-4 mt-6">
-          <button @click="confirmFinishStudy"
-            class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl">記録して終了</button>
-          <button @click="closeMemoConfirm"
-            class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl">戻る</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bottom Nav -->
-    <div
-      class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur shadow-lg border-t border-gray-100 flex justify-around items-center px-4 py-3 pb-6 z-50 rounded-t-3xl max-w-md mx-auto left-0 right-0">
-
-      <!-- Study Tab -->
-      <button @click="view = 'study'" class="flex flex-col items-center gap-1 transition-all duration-300"
-        :class="view === 'study' ? 'text-indigo-600 scale-110' : 'text-gray-400'">
-        <span class="text-2xl" :class="view === 'study' ? 'drop-shadow-md' : ''">⏱️</span>
-        <span class="text-[10px] font-bold">Study</span>
-      </button>
-
-      <!-- Game Tab -->
-      <button @click="inSession ? view = 'timer' : view = 'game'"
-        class="flex flex-col items-center gap-1 transition-all duration-300"
-        :class="view === 'game' ? 'text-amber-500 scale-110' : 'text-gray-400'">
-        <span class="text-2xl" :class="view === 'game' ? 'drop-shadow-md' : ''">⚔️</span>
-        <span class="text-[10px] font-bold">Game</span>
-      </button>
-
-      <!-- Data Tab -->
-      <button @click="view = 'data'" class="flex flex-col items-center gap-1 transition-all duration-300"
-        :class="view === 'data' ? 'text-emerald-500 scale-110' : 'text-gray-400'">
-        <span class="text-2xl" :class="view === 'data' ? 'drop-shadow-md' : ''">📊</span>
-        <span class="text-[10px] font-bold">Data</span>
-      </button>
-
-    </div>
-
-    <!-- Floating Action Button (Only on Study Tab) -->
-    <div v-if="view === 'study'">
-      <!-- Session Resume Component for Pending Study -->
-      <div v-if="inSession" @click="view = 'timer'"
-        class="fixed bottom-24 left-4 right-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-300 text-white p-4 flex items-center justify-between active:scale-95 transition-transform z-40 cursor-pointer animate-bounce-slow">
-        <div class="flex items-center gap-4">
-          <div class="bg-white/20 p-2 rounded-full">
-            <span class="text-2xl">⏳</span>
-          </div>
+        <!-- Battle Header -->
+        <div class="relative z-10 flex justify-between items-center p-4 text-white">
           <div>
-            <div class="text-xs font-bold opacity-80">勉強中 <span class="font-mono ml-1">{{ lastSessionTime }}</span>
+            <div class="text-[10px] tracking-widest text-gray-400 font-bold mb-1">CURRENT STAGE</div>
+            <div class="text-2xl font-black italic flex items-baseline gap-2">
+              <span class="text-3xl text-yellow-500">
+                {{ Math.floor((gameState.stage - 1) / 10) + 1 }}-{{ (gameState.stage - 1) % 10 + 1 }}
+              </span>
+              <span class="text-sm font-normal text-gray-300">{{ gameState.areaName }}</span>
             </div>
-            <div class="text-lg font-bold">{{ currentSubject }}</div>
+          </div>
+          <div class="text-right">
+            <div class="bg-black/30 backdrop-blur rounded-lg px-3 py-1 border border-white/10">
+              <div class="text-[10px] text-gray-400">DPS (攻撃力)</div>
+              <div class="font-bold font-mono">{{ formatNumber(gameState.dps) }}</div>
+            </div>
           </div>
         </div>
-        <div class="bg-white text-indigo-600 px-4 py-1 rounded-full text-xs font-bold">再開</div>
-      </div>
 
-      <!-- New Study Button (Only if NOT in session) -->
-      <button v-else @click="openModal"
-        class="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-300 text-white flex items-center justify-center text-2xl active:scale-90 transition-transform z-40 animate-bounce-slow">
-        <span>✏️</span>
+        <!-- Battle Area -->
+        <div class="relative z-10 flex flex-col items-center justify-center mt-8 h-1/2" @click="handleManualClick">
+          <!-- Damage Numbers Overlay -->
+          <div v-for="dmg in dmgEffects" :key="dmg.id"
+            class="absolute text-3xl font-black text-white pointer-events-none text-stroke animate-fly-up"
+            :style="{ left: dmg.x + 'px', top: dmg.y + 'px', color: dmg.isCrit ? '#fbbf24' : '#fff' }">
+            {{ formatNumber(dmg.val) }}
+          </div>
+
+          <!-- Enemy -->
+          <div class="relative group">
+            <div class="text-9xl filter drop-shadow-2xl transform transition-transform duration-100"
+              :class="{'scale-95 brightness-150': isHit, 'shake': isHit}">
+              {{ gameState.enemyIcon }}
+            </div>
+            <!-- Boss Indicator -->
+            <div v-if="gameState.isBoss"
+              class="absolute -top-6 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[10px] px-2 py-0.5 rounded font-bold tracking-wider animate-bounce">
+              BOSS
+            </div>
+          </div>
+
+          <!-- HP Bar -->
+          <div class="w-64 mt-8">
+            <div class="flex justify-between text-xs text-gray-400 font-bold mb-1 px-1">
+              <span>{{ gameState.enemyName }}</span>
+              <span>{{ Math.ceil((gameState.currentHp / gameState.maxHp) * 100) }}%</span>
+            </div>
+            <div class="w-full h-4 bg-gray-700 rounded-full overflow-hidden border border-white/10 relative">
+              <div class="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-200"
+                :style="{ width: (gameState.currentHp / gameState.maxHp * 100) + '%' }"></div>
+              <!-- Text HP -->
+              <div
+                class="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-white/90 font-bold shadow-black drop-shadow-md">
+                {{ formatNumber(Math.floor(gameState.currentHp)) }} / {{ formatNumber(Math.floor(gameState.maxHp)) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player Actions / Stats -->
+        <div class="absolute bottom-24 left-0 w-full px-4 z-10">
+          <div class="glass-panel p-4 bg-slate-800/80 backdrop-blur-md border-slate-700">
+            <div class="flex items-center gap-3 mb-3">
+              <div
+                class="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-indigo-500/30">
+                🧙‍♂️
+              </div>
+              <div class="flex-1">
+                <div class="text-xs text-gray-400">勇者ランク (Lv.{{ user.level }})</div>
+                <div class="text-sm font-bold text-white">{{ user.rank_name }}</div>
+                <div class="w-full bg-slate-700 h-1 mt-1 rounded-full overflow-hidden">
+                  <div class="bg-indigo-400 h-full" :style="{ width: expPercentage + '%' }"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mt-2">
+              <button @click="openShop"
+                class="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg flex items-center justify-center gap-2 text-white text-xs font-bold transition-colors">
+                <span>🛒</span> 武器屋 (Shop)
+              </button>
+              <button
+                class="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg flex items-center justify-center gap-2 text-white text-xs font-bold transition-colors opacity-50">
+                <span>🏆</span> 転生 (Rebirth)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Background Particle Mock (Optional) -->
+      </div>
+      <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl">
+        <h3 class="text-xl font-bold text-gray-800 mb-2">{{ selectedItem?.name }}</h3>
+        <div class="text-yellow-600 font-bold mb-4">価格: {{ selectedItem?.cost }} XP</div>
+
+        <div class="mb-4">
+          <label class="block text-xs text-gray-400 mb-1">使い道・理由（親へのメッセージ）</label>
+          <textarea v-model="buyComment"
+            class="w-full bg-gray-50 rounded-xl p-3 text-sm border border-gray-200 focus:outline-none focus:border-indigo-400"
+            rows="3" placeholder="例: 今週末マリオやる！"></textarea>
+        </div>
+
+        <div class="flex gap-3">
+          <button @click="confirmBuy"
+            class="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform">
+            購入する
+          </button>
+          <button @click="showBuyModal = false" class="flex-1 bg-gray-100 text-gray-500 font-bold py-3 rounded-xl">
+            やめる
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin View -->
+  <div v-else-if="view === 'admin'" class="pb-24">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-white text-2xl font-bold drop-shadow-sm">ADMIN</h2>
+      <button @click="view = 'dashboard'; adminViewMode = 'menu'"
+        class="bg-white/20 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
+        Exit
       </button>
     </div>
+
+    <!-- Menu Mode -->
+    <div v-if="adminViewMode === 'menu'" class="glass-panel p-6 mb-6">
+      <h3 class="font-bold text-gray-700 mb-4">管理メニュー</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <button
+          class="bg-indigo-50 p-4 rounded-xl text-indigo-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-indigo-100 transition-colors"
+          @click="adminViewMode = 'addTask'">
+          <span>📋</span>タスク追加
+        </button>
+        <button
+          class="bg-pink-50 p-4 rounded-xl text-pink-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-pink-100 transition-colors"
+          @click="adminViewMode = 'addItem'">
+          <span>🛒</span>商品追加
+        </button>
+        <button
+          class="bg-yellow-50 p-4 rounded-xl text-yellow-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-yellow-100 transition-colors"
+          @click="fetchAdminUsers(); adminViewMode = 'grantPoints'">
+          <span>💰</span>ポイント付与
+        </button>
+        <button
+          class="bg-green-50 p-4 rounded-xl text-green-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-green-100 transition-colors"
+          @click="showAlert('履歴確認機能はまだ実装されていません')">
+          <span>📊</span>履歴確認
+        </button>
+      </div>
+      <p class="text-xs text-gray-400 mt-4 text-center">※承認機能などはLINEチャットからも操作可能です。</p>
+    </div>
+
+    <!-- Add Task Mode -->
+    <div v-if="adminViewMode === 'addTask'" class="glass-panel p-6 animate-fade-in-up">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700">タスク追加</h3>
+        <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">タイトル</label>
+          <input v-model="adminForm.taskTitle" type="text"
+            class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-500"
+            placeholder="例: お風呂掃除">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">報酬 (Pt)</label>
+          <input v-model.number="adminForm.taskReward" type="number"
+            class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-500">
+        </div>
+        <button @click="adminCreateTask"
+          class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 mt-2 active:scale-95 transition-transform">作成</button>
+      </div>
+    </div>
+
+    <!-- Add Item Mode -->
+    <div v-if="adminViewMode === 'addItem'" class="glass-panel p-6 animate-fade-in-up">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700">商品追加</h3>
+        <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">商品名</label>
+          <input v-model="adminForm.itemName" type="text"
+            class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500"
+            placeholder="例: ゲーム1時間">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">コスト (Pt)</label>
+          <input v-model.number="adminForm.itemCost" type="number"
+            class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">説明 (任意)</label>
+          <input v-model="adminForm.itemDesc" type="text"
+            class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500">
+        </div>
+        <button @click="adminCreateItem"
+          class="w-full py-3 bg-pink-600 text-white font-bold rounded-xl shadow-lg shadow-pink-200 mt-2 active:scale-95 transition-transform">追加</button>
+      </div>
+    </div>
+
+    <!-- Grant Points Mode -->
+    <div v-if="adminViewMode === 'grantPoints'" class="glass-panel p-6 animate-fade-in-up">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-gray-700">ポイント付与</h3>
+        <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">対象ユーザー</label>
+          <select v-model="adminForm.grantTarget"
+            class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-yellow-500 bg-white">
+            <option v-for="u in adminUsers" :key="u.user_id" :value="u.user_id">{{ u.user_name }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-gray-500 mb-1">付与額</label>
+          <input v-model.number="adminForm.grantAmount" type="number"
+            class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-yellow-500">
+        </div>
+        <button @click="adminGrantPoints"
+          class="w-full py-3 bg-yellow-500 text-white font-bold rounded-xl shadow-lg shadow-yellow-200 mt-2 active:scale-95 transition-transform">付与する</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Data View -->
+  <div v-else-if="view === 'data'" class="pb-24">
+    <!-- Avatar & Rank Section -->
+    <div class="text-center mb-6">
+      <div class="relative inline-block">
+        <div class="w-24 h-24 mx-auto bg-white rounded-full p-1 shadow-xl">
+          <img :src="user.avatar_url || 'https://via.placeholder.com/150'"
+            class="w-full h-full rounded-full object-cover">
+        </div>
+        <div
+          class="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-3 py-1 rounded-full shadow border-2 border-white">
+          Lx.{{ user.level }}
+        </div>
+      </div>
+      <h1 class="text-white text-xl font-bold mt-3 shadow-sm">{{ user.name }}</h1>
+      <div class="inline-block bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full mt-1">
+        {{ user.rank_name }}
+      </div>
+    </div>
+
+    <div class="glass-panel p-6 mb-6">
+      <h3 class="font-bold text-gray-700 mb-4">分析（準備中...）</h3>
+      <p class="text-sm text-gray-400">グラフなどをここに表示します</p>
+    </div>
+
+    <!-- Admin Toggle (Visible only to ADMIN) -->
+    <button v-if="user.role === 'ADMIN'" @click="view = 'admin'"
+      class="w-full py-3 bg-white/20 text-white text-sm rounded-xl font-bold backdrop-blur-sm">
+      🔧 Admin Mode
+    </button>
+  </div>
+
+  <!-- Study View (Default) -->
+  <div v-else class="pb-24">
+    <!-- Main Stats Card -->
+    <div class="glass-panel p-6 mb-6 transform transition-all hover:scale-[1.02]">
+      <div class="flex justify-between items-center mb-4">
+        <div class="text-gray-500 text-sm font-bold">TOTAL STUDY</div>
+        <div class="text-indigo-600 text-2xl font-black">{{ user.total_hours }}<span
+            class="text-sm text-gray-400 ml-1">h</span></div>
+      </div>
+
+      <!-- EXP Bar -->
+      <div class="mb-2 flex justify-between text-xs font-bold text-gray-500">
+        <span>EXP</span>
+        <span>{{ user.exp }} / {{ user.next_exp }}</span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-3 mb-6 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-400 to-indigo-500 h-3 rounded-full progress-bar"
+          :style="{ width: expPercentage + '%' }"></div>
+      </div>
+
+      <!-- Coins -->
+      <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+        <div class="flex items-center text-gray-600 font-bold">
+          <span class="text-xl mr-2">💰</span>
+          <span>XP</span>
+        </div>
+        <div class="text-xl font-bold text-yellow-600">{{ (user.xp || 0).toLocaleString() }} XP</div>
+      </div>
+    </div>
+
+    <!-- Weekly Activity Chart (Swipeable) -->
+    <div class="glass-panel p-5 mb-6 select-none relative" @touchstart="onTouchStart" @touchend="onTouchEnd">
+      <h3 class="text-gray-700 font-bold mb-4 flex items-center justify-between">
+        <div class="flex items-center text-sm">
+          <span class="w-1 h-6 bg-pink-500 rounded-full mr-2"></span>
+          {{ weeklyActivityTitle }}
+        </div>
+        <!-- Indicator Dots -->
+        <div class="flex gap-1">
+          <div class="w-2 h-2 rounded-full transition-colors"
+            :class="chartMode === 'lastWeek' ? 'bg-pink-500' : 'bg-gray-200'"></div>
+          <div class="w-2 h-2 rounded-full transition-colors"
+            :class="chartMode === 'thisWeek' ? 'bg-pink-500' : 'bg-gray-200'"></div>
+          <div class="w-2 h-2 rounded-full transition-colors"
+            :class="chartMode === 'subjects' ? 'bg-pink-500' : 'bg-gray-200'"></div>
+        </div>
+      </h3>
+
+      <!-- Bar Charts (This/Last Week) -->
+      <div v-if="chartMode !== 'subjects'" class="flex items-end justify-between h-32 px-2 transition-all duration-300">
+        <div v-for="(day, index) in (chartMode === 'thisWeek' ? weeklyData : lastWeekData)" :key="index"
+          class="flex flex-col items-center w-1/7 group">
+          <div class="relative w-3 bg-gray-100 rounded-t-sm h-full flex items-end overflow-hidden">
+            <div class="w-full bg-pink-400 rounded-t-sm transition-all duration-500 group-hover:bg-pink-500"
+              :style="{ height: day.percent + '%' }"></div>
+          </div>
+          <span class="text-[9px] text-gray-400 mt-2 font-bold whitespace-nowrap transform -rotate-45 origin-left">{{
+            day.label }}</span>
+        </div>
+      </div>
+
+      <!-- Subject Ratio (Visualized as Horizontal Bars) -->
+      <div v-else class="h-32 px-2 overflow-y-auto custom-scrollbar flex flex-col justify-center">
+        <div v-for="subj in subjectData" :key="subj.label" class="mb-3">
+          <div class="flex justify-between text-xs font-bold text-gray-600 mb-1">
+            <span>{{ subj.label }}</span>
+            <span>{{ subj.percent }}%</span>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+            <div class="h-full rounded-full shadow-sm"
+              :style="{ width: subj.percent + '%', backgroundColor: subj.color }"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center text-[10px] text-gray-300 mt-2 font-mono">← Swipe →</div>
+    </div>
+
+    <!-- Menu Grid -->
+    <div class="grid grid-cols-2 gap-4 mb-20">
+      <button @click="openShop"
+        class="glass-panel p-4 flex flex-col items-center justify-center active:scale-95 transition-transform">
+        <span class="text-3xl mb-2">🛒</span>
+        <span class="font-bold text-gray-700">ショップ</span>
+      </button>
+      <button
+        class="glass-panel p-4 flex flex-col items-center justify-center active:scale-95 transition-transform opacity-50">
+        <span class="text-3xl mb-2">⚔️</span>
+        <span class="font-bold text-gray-700">準備中</span>
+      </button>
+    </div>
+    <!-- Study Start Modal -->
+    <div v-if="showStudyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showStudyModal = false"></div>
+      <div class="bg-white rounded-3xl p-6 w-full max-w-md relative z-10 shadow-2xl overflow-hidden">
+        <h3 class="text-2xl font-bold text-center text-gray-800 mb-6 tracking-wide">何を勉強する？</h3>
+
+        <div v-if="studying" class="text-center py-8">
+          <div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-500 border-t-transparent mx-auto mb-4">
+          </div>
+          <p class="text-gray-600 font-bold">準備中...</p>
+        </div>
+
+        <div v-else class="grid grid-cols-2 gap-4">
+          <button v-for="(color, subject) in subjects" :key="subject" @click="startStudy(subject)"
+            class="relative flex flex-col items-center justify-center h-28 rounded-2xl shadow-md border-2 border-transparent hover:border-indigo-400 group transition-all duration-150 active:scale-95 overflow-hidden cursor-pointer">
+            <div class="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
+              :style="{ backgroundColor: color }"></div>
+            <div class="text-4xl mb-2 z-10">
+              <span v-if="subject === '国語'">📕</span>
+              <span v-else-if="subject === '数学'">📐</span>
+              <span v-else-if="subject === '英語'">🇬🇧</span>
+              <span v-else-if="subject === '理科'">🔬</span>
+              <span v-else-if="subject === '社会'">🌏</span>
+              <span v-else>📖</span>
+            </div>
+            <span class="font-bold text-lg text-gray-700 z-10">{{ subject }}</span>
+            <span class="text-xs text-gray-400 z-10 mt-1">
+              <template v-if="subject === '国語'">読解・漢字・作文</template>
+              <template v-else-if="subject === '数学'">計算・図形・論理</template>
+              <template v-else-if="subject === '英語'">単語・文法・リスニング</template>
+              <template v-else-if="subject === '理科'">物理・化学・生物</template>
+              <template v-else-if="subject === '社会'">歴史・地理・公民</template>
+              <template v-else>自由記述</template>
+            </span>
+            <div class="absolute bottom-0 left-0 w-full h-1" :style="{ backgroundColor: color }"></div>
+          </button>
+        </div>
+
+        <button @click="showStudyModal = false"
+          class="mt-8 w-full py-3 bg-gray-100 rounded-xl text-gray-500 font-bold active:bg-gray-200 tracking-wide">
+          キャンセル
+        </button>
+      </div>
+    </div>
+
+  </div>
+  </div>
+
+  <!-- メモ確認ダイアログ -->
+  <div v-if="showMemoConfirm" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="closeMemoConfirm"></div>
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl overflow-hidden">
+      <h3 class="text-xl font-bold text-center text-gray-800 mb-6">勉強内容の確認</h3>
+      <div class="mb-4">
+        <div class="text-gray-600 text-sm mb-2">今回の勉強内容・メモ</div>
+        <div class="bg-gray-100 rounded-xl p-3 min-h-[60px] text-gray-800 whitespace-pre-line">{{ memoToSend ||
+          '（未入力）' }}</div>
+      </div>
+      <div class="flex gap-4 mt-6">
+        <button @click="confirmFinishStudy"
+          class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl">記録して終了</button>
+        <button @click="closeMemoConfirm" class="flex-1 py-3 bg-gray-200 text-gray-600 font-bold rounded-xl">戻る</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div
+    class="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur shadow-lg border-t border-gray-100 flex justify-around items-center px-4 py-3 pb-6 z-50 rounded-t-3xl max-w-md mx-auto left-0 right-0">
+
+    <!-- Study Tab -->
+    <button @click="view = 'study'" class="flex flex-col items-center gap-1 transition-all duration-300"
+      :class="view === 'study' ? 'text-indigo-600 scale-110' : 'text-gray-400'">
+      <span class="text-2xl" :class="view === 'study' ? 'drop-shadow-md' : ''">⏱️</span>
+      <span class="text-[10px] font-bold">Study</span>
+    </button>
+
+    <!-- Game Tab -->
+    <button @click="inSession ? view = 'timer' : view = 'game'"
+      class="flex flex-col items-center gap-1 transition-all duration-300"
+      :class="view === 'game' ? 'text-amber-500 scale-110' : 'text-gray-400'">
+      <span class="text-2xl" :class="view === 'game' ? 'drop-shadow-md' : ''">⚔️</span>
+      <span class="text-[10px] font-bold">Game</span>
+    </button>
+
+    <!-- Data Tab -->
+    <button @click="view = 'data'" class="flex flex-col items-center gap-1 transition-all duration-300"
+      :class="view === 'data' ? 'text-emerald-500 scale-110' : 'text-gray-400'">
+      <span class="text-2xl" :class="view === 'data' ? 'drop-shadow-md' : ''">📊</span>
+      <span class="text-[10px] font-bold">Data</span>
+    </button>
+
+  </div>
+
+  <!-- Floating Action Button (Only on Study Tab) -->
+  <div v-if="view === 'study'">
+    <!-- Session Resume Component for Pending Study -->
+    <div v-if="inSession" @click="view = 'timer'"
+      class="fixed bottom-24 left-4 right-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-300 text-white p-4 flex items-center justify-between active:scale-95 transition-transform z-40 cursor-pointer animate-bounce-slow">
+      <div class="flex items-center gap-4">
+        <div class="bg-white/20 p-2 rounded-full">
+          <span class="text-2xl">⏳</span>
+        </div>
+        <div>
+          <div class="text-xs font-bold opacity-80">勉強中 <span class="font-mono ml-1">{{ lastSessionTime }}</span>
+          </div>
+          <div class="text-lg font-bold">{{ currentSubject }}</div>
+        </div>
+      </div>
+      <div class="bg-white text-indigo-600 px-4 py-1 rounded-full text-xs font-bold">再開</div>
+    </div>
+
+    <!-- New Study Button (Only if NOT in session) -->
+    <button v-else @click="openModal"
+      class="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-300 text-white flex items-center justify-center text-2xl active:scale-90 transition-transform z-40 animate-bounce-slow">
+      <span>✏️</span>
+    </button>
+  </div>
   </div>
 
   <script src="/static/js/app.js"></script>

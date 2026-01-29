@@ -80,7 +80,33 @@ createApp({
         itemDesc: '',
         grantTarget: '',
         grantAmount: 100,
-      }
+      },
+
+      // Chart Data
+      chartMode: 'thisWeek', // lastWeek, thisWeek, subjects
+      weeklyActivityTitle: '今週の活動',
+      weeklyData: [], // { label: 'Su 26', percent: 20 }
+      lastWeekData: [],
+      subjectData: [], // { label: 'Subject', percent: 30, color: '...' }
+      touchStartX: 0,
+
+      // RPG Game State
+      gameState: {
+        stage: 1,
+        areaName: '始まりの大地',
+        currentHp: 100,
+        maxHp: 100,
+        enemyName: 'スライム',
+        enemyIcon: '💧',
+        isBoss: false,
+        dps: 0,
+        clickDamage: 1,
+        lastTick: Date.now()
+      },
+      dmgEffects: [],
+      isHit: false,
+      battleInterval: null,
+      dmgIdCounter: 0,
     }
   },
   computed: {
@@ -90,8 +116,7 @@ createApp({
     }
   },
   async mounted() {
-    this.generateWeeklyData();
-    // 自動再生ポリシー対策: 初回はユーザーアクションが必要な場合が多いが、
+    this.generateWeeklyData(); this.startBattleLoop();    // 自動再生ポリシー対策: 初回はユーザーアクションが必要な場合が多いが、
     // アプリ起動時の演出として再生を試みる
     playSound('poweron');
 
@@ -100,6 +125,88 @@ createApp({
     // await this.fetchUserData("DEBUG_USER"); 
   },
   methods: {
+    formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+      return Math.floor(num);
+    },
+    // --- RPG Logic ---
+    startBattleLoop() {
+      if (this.battleInterval) clearInterval(this.battleInterval);
+      this.battleInterval = setInterval(() => {
+        if (this.view === 'game') {
+          // Auto Attack (DPS)
+          if (this.gameState.dps > 0) {
+            this.dealDamage(this.gameState.dps / 10); // 10 ticks per second
+          }
+        }
+      }, 100);
+    },
+    handleManualClick(e) {
+      // Click effect coordinates
+      const rect = e.target.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      this.dealDamage(this.gameState.clickDamage, true, x, y);
+      playSound('click');
+    },
+    dealDamage(amount, isCrit = false, x = 0, y = 0) {
+      this.gameState.currentHp -= amount;
+      this.isHit = true;
+      setTimeout(() => this.isHit = false, 100);
+
+      // Visual Effect
+      if (isCrit || Math.random() < 0.3) {
+        const id = this.dmgIdCounter++;
+        // Random pos if not specified
+        const finalX = x || (window.innerWidth / 2) + (Math.random() * 100 - 50);
+        const finalY = y || (window.innerHeight / 2 - 100);
+
+        this.dmgEffects.push({ id, val: amount, x: finalX, y: finalY, isCrit });
+        setTimeout(() => {
+          this.dmgEffects = this.dmgEffects.filter(d => d.id !== id);
+        }, 800);
+      }
+
+      if (this.gameState.currentHp <= 0) {
+        this.enemyDefeated();
+      }
+    },
+    enemyDefeated() {
+      playSound('levelup');
+      this.gameState.stage++;
+
+      // Calculate Next Enemy
+      // HP = Base * (1.1 ^ Stage)
+      const growthRate = 1.1;
+      const baseHp = 100;
+      const nextHp = Math.floor(baseHp * Math.pow(growthRate, this.gameState.stage));
+
+      this.gameState.maxHp = nextHp;
+      this.gameState.currentHp = nextHp;
+
+      // Boss Logic (Every 10 stages)
+      this.gameState.isBoss = (this.gameState.stage % 10 === 0);
+
+      // Update Name/Icon
+      const enemies = [
+        { name: 'スライム', icon: '💧' }, { name: 'コウモリ', icon: '🦇' },
+        { name: 'ゴブリン', icon: '👺' }, { name: 'オオカミ', icon: '🐺' },
+        { name: 'スケルトン', icon: '💀' }, { name: 'オーク', icon: '👹' },
+        { name: 'ゴーレム', icon: '🗿' }, { name: 'ドラゴン', icon: '🐲' }
+      ];
+      // Cycle through enemies based on stage
+      const enemyType = enemies[(this.gameState.stage - 1) % enemies.length];
+      this.gameState.enemyName = this.gameState.isBoss ? '??? (BOSS)' : enemyType.name;
+      this.gameState.enemyIcon = this.gameState.isBoss ? '👿' : enemyType.icon;
+
+      // Reset Boss HP Multiplier
+      if (this.gameState.isBoss) {
+        this.gameState.maxHp *= 5; // Boss has 5x HP
+        this.gameState.currentHp = this.gameState.maxHp;
+      }
+    },
     async initLiff() {
       try {
         // liffIdが空の場合は初期化スキップ（ローカルデバッグ用）
@@ -141,6 +248,24 @@ createApp({
       } finally {
         this.loading = false;
       }
+    },
+    applyStudyDamage(minutes) {
+      if (!minutes || minutes <= 0) return;
+
+      this.view = 'game'; // Switch to game view to show effect
+
+      // Calculate Damage
+      // Base: 100 dmg per minute * Level multiplier
+      // "1 min = 1 Wave" heuristic: needs massive damage scaling to match exponential HP
+      // Let's make it impactful: 100 * (1.2 ^ Stage) * minutes
+      const stageScaling = Math.pow(1.1, this.gameState.stage);
+      const damage = Math.floor(minutes * 100 * stageScaling); // Ensures progress even at high stages
+
+      // Animate generic big hit
+      setTimeout(() => {
+        this.dealDamage(damage, true); // critical hit visual
+        alert(`勉強の成果！\n敵に ${this.formatNumber(damage)} のダメージを与えました！`);
+      }, 500);
     },
     async fetchUserData(userId) {
       try {
@@ -317,6 +442,9 @@ createApp({
           this.inSession = false; // 終了
           // 最新のデータを再取得（EXP/コイン反映のため）
           await this.fetchUserData(this.currentUserId);
+
+          // Apply Study Damage to RPG
+          this.applyStudyDamage(json.minutes);
         } else {
           alert("終了処理に失敗しました: " + json.message);
         }
