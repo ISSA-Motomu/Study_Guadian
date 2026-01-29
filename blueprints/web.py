@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, send_from_directory, current_app
 import os
 import datetime
 from services.shop import ShopService
+from services.gsheet import GSheetService
 from services.economy import EconomyService
 from services.history import HistoryService
 from services.status_service import StatusService
@@ -177,8 +178,8 @@ def api_start_study():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@web_bp.route("/api/study/active_session")
-def api_active_session():
+@web_bp.route("/api/user/<user_id>/active_session")
+def api_active_session(user_id):
     # 簡易実装: リクエストがあればアクティブとみなすか、本来はDB問い合わせが必要
     # ユーザーが「勉強中」かどうかを判定するロジック
     return jsonify({"status": "ok", "active": False})

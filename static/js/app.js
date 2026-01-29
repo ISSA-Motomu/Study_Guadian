@@ -6,7 +6,7 @@ const sounds = {
   click: new Audio('/static/assets/sounds/mouse_click.mp3'),
   select1: new Audio('/static/assets/sounds/select1.mp3'),
   select3: new Audio('/static/assets/sounds/select3.mp3'),
-  levelup: new Audio('/static/assets/sounds/levelup.mp3')
+  levelup: new Audio('/static/assets/sounds/Correct5.mp3')
 };
 
 const playSound = (name) => {
