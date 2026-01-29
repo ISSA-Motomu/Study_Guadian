@@ -166,7 +166,7 @@ createApp({
         const json = await res.json();
         if (json.status === 'ok') {
           this.shopItems = json.data;
-          this.view = 'shop';
+          this.view = 'game';
         } else {
           alert("ショップ情報の取得に失敗しました");
         }

@@ -107,18 +107,19 @@
       </div>
 
       <!-- Shop View -->
-      <div v-else-if="view === 'shop'" class="pb-24">
+      <div v-else-if="view === 'game'" class="pb-24">
         <div class="flex justify-between items-center mb-6">
           <div class="flex items-center gap-2">
-            <button @click="view = 'dashboard'"
-              class="text-white text-xl p-2 rounded-full hover:bg-white/20 transition-colors">
-              ←
-            </button>
             <h2 class="text-white text-2xl font-bold drop-shadow-sm">SHOP</h2>
           </div>
           <div class="bg-white/90 backdrop-blur rounded-full px-4 py-1 text-sm font-bold text-yellow-600 shadow-sm">
-            💰 {{ user.pt.toLocaleString() }} pt
+            💰 {{ (user.gold || 0).toLocaleString() }} G
           </div>
+        </div>
+
+        <div class="glass-panel p-6 mb-6">
+          <h3 class="font-bold text-gray-700 mb-2">RPGモード準備中...</h3>
+          <p class="text-sm text-gray-400">現在ショップ機能のみ利用可能です。</p>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -126,7 +127,7 @@
             class="bg-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between h-40 relative overflow-hidden">
             <div
               class="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-bl-xl shadow-sm">
-              {{ item.cost }} pt
+              {{ item.cost }} G
             </div>
             <div class="text-4xl text-center mt-4">✨</div>
             <div>
@@ -342,9 +343,9 @@
           <div class="flex items-center justify-between border-t border-gray-100 pt-4">
             <div class="flex items-center text-gray-600 font-bold">
               <span class="text-xl mr-2">💰</span>
-              <span>ポイント</span>
+              <span>Gold</span>
             </div>
-            <div class="text-xl font-bold text-yellow-600">{{ user.coins.toLocaleString() }} pt</div>
+            <div class="text-xl font-bold text-yellow-600">{{ (user.gold || 0).toLocaleString() }} G</div>
           </div>
         </div>
 

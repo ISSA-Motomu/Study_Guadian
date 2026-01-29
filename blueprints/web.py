@@ -140,9 +140,10 @@ def api_user_status(user_id):
             "level": level,
             "exp": exp,
             "next_exp": next_exp,
-            "pt": int(
+            "gold": int(
                 user_info.get("current_exp", 0)
-            ),  # シート側のカラム名は current_exp
+            ),  # シートのcurrent_expをGoldとして扱う
+            "gems": 0,  # ジェムは一先ず0固定
             "total_hours": round(total_hours, 1),
             "rank_name": rank_info.get("name", "Rank E"),
             "avatar_url": user_info.get("avatar_url", ""),
