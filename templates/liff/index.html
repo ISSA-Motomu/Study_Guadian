@@ -113,7 +113,7 @@
             <h2 class="text-white text-2xl font-bold drop-shadow-sm">SHOP</h2>
           </div>
           <div class="bg-white/90 backdrop-blur rounded-full px-4 py-1 text-sm font-bold text-yellow-600 shadow-sm">
-            💰 {{ (user.gold || 0).toLocaleString() }} G
+            💰 {{ (user.xp || 0).toLocaleString() }} XP
           </div>
         </div>
 
@@ -127,7 +127,7 @@
             class="bg-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between h-40 relative overflow-hidden">
             <div
               class="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-bl-xl shadow-sm">
-              {{ item.cost }} G
+              {{ item.cost }} XP
             </div>
             <div class="text-4xl text-center mt-4">✨</div>
             <div>
@@ -150,7 +150,7 @@
           <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showBuyModal = false"></div>
           <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl">
             <h3 class="text-xl font-bold text-gray-800 mb-2">{{ selectedItem?.name }}</h3>
-            <div class="text-yellow-600 font-bold mb-4">価格: {{ selectedItem?.cost }} G</div>
+            <div class="text-yellow-600 font-bold mb-4">価格: {{ selectedItem?.cost }} XP</div>
 
             <div class="mb-4">
               <label class="block text-xs text-gray-400 mb-1">使い道・理由（親へのメッセージ）</label>
@@ -343,9 +343,9 @@
           <div class="flex items-center justify-between border-t border-gray-100 pt-4">
             <div class="flex items-center text-gray-600 font-bold">
               <span class="text-xl mr-2">💰</span>
-              <span>Gold</span>
+              <span>XP</span>
             </div>
-            <div class="text-xl font-bold text-yellow-600">{{ (user.gold || 0).toLocaleString() }} G</div>
+            <div class="text-xl font-bold text-yellow-600">{{ (user.xp || 0).toLocaleString() }} XP</div>
           </div>
         </div>
 
@@ -459,7 +459,8 @@
       </button>
 
       <!-- Game Tab -->
-      <button @click="view = 'game'" class="flex flex-col items-center gap-1 transition-all duration-300"
+      <button @click="inSession ? view = 'timer' : view = 'game'"
+        class="flex flex-col items-center gap-1 transition-all duration-300"
         :class="view === 'game' ? 'text-amber-500 scale-110' : 'text-gray-400'">
         <span class="text-2xl" :class="view === 'game' ? 'drop-shadow-md' : ''">⚔️</span>
         <span class="text-[10px] font-bold">Game</span>
@@ -475,10 +476,28 @@
     </div>
 
     <!-- Floating Action Button (Only on Study Tab) -->
-    <button v-if="view === 'study'" @click="openModal"
-      class="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-300 text-white flex items-center justify-center text-2xl active:scale-90 transition-transform z-40 animate-bounce-slow">
-      <span>📚</span>
-    </button>
+    <div v-if="view === 'study'">
+      <!-- Session Resume Component for Pending Study -->
+      <div v-if="inSession" @click="view = 'timer'"
+        class="fixed bottom-24 left-4 right-4 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-300 text-white p-4 flex items-center justify-between active:scale-95 transition-transform z-40 cursor-pointer animate-bounce-slow">
+        <div class="flex items-center gap-4">
+          <div class="bg-white/20 p-2 rounded-full">
+            <span class="text-2xl">⏳</span>
+          </div>
+          <div>
+            <div class="text-xs font-bold opacity-80">勉強中</div>
+            <div class="text-lg font-bold">{{ currentSubject }}</div>
+          </div>
+        </div>
+        <div class="bg-white text-indigo-600 px-4 py-1 rounded-full text-xs font-bold">再開</div>
+      </div>
+
+      <!-- New Study Button (Only if NOT in session) -->
+      <button v-else @click="openModal"
+        class="fixed bottom-24 right-6 w-14 h-14 bg-indigo-600 rounded-full shadow-lg shadow-indigo-300 text-white flex items-center justify-center text-2xl active:scale-90 transition-transform z-40 animate-bounce-slow">
+        <span>✏️</span>
+      </button>
+    </div>
   </div>
 
   <script src="/static/js/app.js"></script>

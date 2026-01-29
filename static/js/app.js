@@ -45,6 +45,7 @@ createApp({
       showStudyModal: false,
       subjects: {},
       studying: false,
+      inSession: false, // 勉強セッションが継続中かどうか
       currentUserId: null,
       view: 'study', // study, game, data
       currentSubject: '',
@@ -150,7 +151,7 @@ createApp({
           name: "勇者アルス",
           level: 12,
           exp: 1450,
-          next_exp: 2000, gold: 500,
+          next_exp: 2000, xp: 500,
           gems: 5, pt: 3500,
           total_hours: 42.5,
           rank_name: "Rank C: 熟練者",
@@ -185,8 +186,8 @@ createApp({
     async confirmBuy() {
       if (!this.selectedItem) return;
 
-      if (this.user.coins < this.selectedItem.cost) {
-        alert("ポイントが足りません！");
+      if ((this.user.xp || 0) < this.selectedItem.cost) {
+        alert("XPが足りません！");
         return;
       }
 
@@ -258,8 +259,7 @@ createApp({
           this.currentSubjectColor = this.subjects[subject];
           this.startTime = new Date();
           this.view = 'timer';
-          this.startTimerTick();
-        } else {
+          this.startTimerTick(); this.inSession = true; // セッション開始        } else {
           alert("開始失敗: " + json.message);
         }
       } catch (e) {
@@ -303,6 +303,7 @@ createApp({
           this.studying = false;
           clearInterval(this.timerInterval);
           this.view = 'study';
+          this.inSession = false; // 終了
           // 最新のデータを再取得（EXP/コイン反映のため）
           await this.fetchUserData(this.currentUserId);
         } else {
@@ -329,7 +330,8 @@ createApp({
           this.studying = false;
           this.showStudyModal = false;
           clearInterval(this.timerInterval);
-          this.view = 'dashboard';
+          this.view = 'study'; // dashboard -> study統一
+          this.inSession = false; // 完全取り消し
         } else {
           alert("取消に失敗しました");
         }
@@ -356,6 +358,8 @@ createApp({
           // alert(`一時中断しました。\n(経過時間: ${json.minutes}分)`);
           this.studying = false;
           clearInterval(this.timerInterval);
+          this.inSession = true; // 中断中もセッションとしては継続扱い（Pending状態）
+
           if (closeApp) {
             liff.closeWindow();
           } else {
@@ -387,6 +391,9 @@ createApp({
           this.startTime = startDate;
           this.view = 'timer'; // タイマー画面へ復帰
           this.startTimerTick();
+          this.inSession = true; // 復帰時もセッション中
+        } else {
+          this.inSession = false;
         }
       } catch (e) { console.error(e); }
     },
