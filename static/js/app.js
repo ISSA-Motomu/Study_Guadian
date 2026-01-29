@@ -56,7 +56,18 @@ createApp({
       shopItems: [],
       selectedItem: null,
       showBuyModal: false,
-      buyComment: ''
+      buyComment: '',
+      adminViewMode: 'menu', // menu, addTask, addItem, grantPoints
+      adminUsers: [],
+      adminForm: {
+        taskTitle: '',
+        taskReward: 100,
+        itemName: '',
+        itemCost: 100,
+        itemDesc: '',
+        grantTarget: '',
+        grantAmount: 100,
+      }
     }
   },
   computed: {
@@ -377,5 +388,89 @@ createApp({
         }
       } catch (e) { console.error(e); }
     },
+    // --- Admin Actions ---
+    fetchAdminUsers() {
+      fetch('/api/admin/users')
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            this.adminUsers = data.users;
+            if (this.adminUsers.length > 0) {
+              this.adminForm.grantTarget = this.adminUsers[0].user_id;
+            }
+          }
+        })
+        .catch(err => console.error('Error fetching users:', err));
+    },
+    adminCreateTask() {
+      if (!this.adminForm.taskTitle) return alert('タイトルを入力してください');
+      fetch('/api/admin/add_task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: this.adminForm.taskTitle,
+          reward: this.adminForm.taskReward
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            playSound('select3');
+            alert('タスクを作成しました！');
+            this.adminForm.taskTitle = '';
+            this.adminForm.taskReward = 100;
+            this.adminViewMode = 'menu';
+          } else {
+            alert('エラー: ' + data.message);
+          }
+        });
+    },
+    adminCreateItem() {
+      if (!this.adminForm.itemName) return alert('商品名を入力してください');
+      fetch('/api/admin/add_item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: this.adminForm.itemName,
+          cost: this.adminForm.itemCost,
+          description: this.adminForm.itemDesc
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            playSound('select3');
+            alert('商品を追加しました！');
+            this.adminForm.itemName = '';
+            this.adminForm.itemCost = 100;
+            this.adminForm.itemDesc = '';
+            this.adminViewMode = 'menu';
+          } else {
+            alert('エラー: ' + data.message);
+          }
+        });
+    },
+    adminGrantPoints() {
+      if (!this.adminForm.grantTarget) return alert('対象ユーザーを選択してください');
+      fetch('/api/admin/grant_points', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: this.adminForm.grantTarget,
+          amount: this.adminForm.grantAmount
+        })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'success') {
+            playSound('select3');
+            alert('ポイントを付与しました！');
+            this.adminForm.grantAmount = 100;
+            this.adminViewMode = 'menu';
+          } else {
+            alert('エラー: ' + data.message);
+          }
+        });
+    }
   }
 }).mount('#app')

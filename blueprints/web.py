@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, send_from_directory, current_app
 import os
 import datetime
+from services.job import JobService
 from services.shop import ShopService
 from services.gsheet import GSheetService
 from services.economy import EconomyService
@@ -13,6 +14,67 @@ from linebot.models import FlexSendMessage
 from handlers import study
 
 web_bp = Blueprint("web", __name__)
+
+
+@web_bp.route("/api/admin/users")
+def api_admin_users():
+    """全ユーザーリストを返す"""
+    users = EconomyService.get_all_users()
+    return jsonify({"status": "ok", "data": users})
+
+
+@web_bp.route("/api/admin/add_task", methods=["POST"])
+def api_admin_add_task():
+    """タスク追加"""
+    data = request.json
+    title = data.get("title")
+    reward = data.get("reward")
+    client_id = data.get("user_id")  # 操作している管理者ID
+
+    if not title or not reward:
+        return jsonify({"status": "error", "message": "Missing fields"}), 400
+
+    success, result = JobService.create_job(title, int(reward), "", client_id)
+    if success:
+        return jsonify({"status": "ok", "job_id": result})
+    else:
+        return jsonify({"status": "error", "message": result}), 500
+
+
+@web_bp.route("/api/admin/add_item", methods=["POST"])
+def api_admin_add_item():
+    """アイテム追加"""
+    data = request.json
+    name = data.get("name")
+    cost = data.get("cost")
+    description = data.get("description", "")
+
+    if not name or not cost:
+        return jsonify({"status": "error", "message": "Missing fields"}), 400
+
+    item_key = ShopService.add_item(name, int(cost), description)
+    if item_key:
+        return jsonify({"status": "ok", "item_key": item_key})
+    else:
+        return jsonify({"status": "error", "message": "Failed to add item"}), 500
+
+
+@web_bp.route("/api/admin/grant_points", methods=["POST"])
+def api_admin_grant_points():
+    """ポイント付与"""
+    data = request.json
+    target_id = data.get("target_id")
+    amount = data.get("amount")
+    reason = data.get("reason", "ADMIN_GRANT")
+
+    if not target_id or amount is None:
+        return jsonify({"status": "error", "message": "Missing fields"}), 400
+
+    result = EconomyService.add_exp(target_id, int(amount), reason)
+    if result:
+        return jsonify({"status": "ok"})
+    else:
+        return jsonify({"status": "error", "message": "Failed to grant points"}), 500
 
 
 @web_bp.route("/app/dashboard")

@@ -30,6 +30,22 @@
     .progress-bar {
       transition: width 1s ease-in-out;
     }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fade-in-up {
+      animation: fadeInUp 0.4s ease-out forwards;
+    }
   </style>
 </head>
 
@@ -159,36 +175,115 @@
       <div v-else-if="view === 'admin'" class="pb-24">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-white text-2xl font-bold drop-shadow-sm">ADMIN</h2>
-          <button @click="view = 'dashboard'"
+          <button @click="view = 'dashboard'; adminViewMode = 'menu'"
             class="bg-white/20 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
             Exit
           </button>
         </div>
 
-        <div class="glass-panel p-6 mb-6">
+        <!-- Menu Mode -->
+        <div v-if="adminViewMode === 'menu'" class="glass-panel p-6 mb-6">
           <h3 class="font-bold text-gray-700 mb-4">管理メニュー</h3>
           <div class="grid grid-cols-2 gap-4">
             <button
-              class="bg-indigo-50 p-4 rounded-xl text-indigo-700 font-bold text-sm flex flex-col items-center gap-2"
-              @click="alert('LINEの「タスク追加」コマンドを使ってください')">
+              class="bg-indigo-50 p-4 rounded-xl text-indigo-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-indigo-100 transition-colors"
+              @click="adminViewMode = 'addTask'">
               <span>📋</span>タスク追加
             </button>
-            <button class="bg-pink-50 p-4 rounded-xl text-pink-700 font-bold text-sm flex flex-col items-center gap-2"
-              @click="alert('Googleフォームまたは「商品追加」コマンドを使ってください')">
+            <button
+              class="bg-pink-50 p-4 rounded-xl text-pink-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-pink-100 transition-colors"
+              @click="adminViewMode = 'addItem'">
               <span>🛒</span>商品追加
             </button>
             <button
-              class="bg-yellow-50 p-4 rounded-xl text-yellow-700 font-bold text-sm flex flex-col items-center gap-2"
-              @click="alert('LINEの「ポイント付与」コマンドを使ってください')">
+              class="bg-yellow-50 p-4 rounded-xl text-yellow-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-yellow-100 transition-colors"
+              @click="fetchAdminUsers(); adminViewMode = 'grantPoints'">
               <span>💰</span>ポイント付与
             </button>
-            <button class="bg-green-50 p-4 rounded-xl text-green-700 font-bold text-sm flex flex-col items-center gap-2"
-              @click="alert('LINEの「ステータス」コマンドをで履歴を確認できます')">
+            <button
+              class="bg-green-50 p-4 rounded-xl text-green-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-green-100 transition-colors"
+              @click="alert('履歴確認機能はまだ実装されていません')">
               <span>📊</span>履歴確認
             </button>
           </div>
-          <p class="text-xs text-gray-400 mt-4 text-center">※現在、承認機能はLINEのチャット画面で行ってください。</p>
+          <p class="text-xs text-gray-400 mt-4 text-center">※承認機能などはLINEチャットからも操作可能です。</p>
         </div>
+
+        <!-- Add Task Mode -->
+        <div v-if="adminViewMode === 'addTask'" class="glass-panel p-6 animate-fade-in-up">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-gray-700">タスク追加</h3>
+            <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">タイトル</label>
+              <input v-model="adminForm.taskTitle" type="text"
+                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-500"
+                placeholder="例: お風呂掃除">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">報酬 (Gold)</label>
+              <input v-model.number="adminForm.taskReward" type="number"
+                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-500">
+            </div>
+            <button @click="adminCreateTask"
+              class="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 mt-2 active:scale-95 transition-transform">作成</button>
+          </div>
+        </div>
+
+        <!-- Add Item Mode -->
+        <div v-if="adminViewMode === 'addItem'" class="glass-panel p-6 animate-fade-in-up">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-gray-700">商品追加</h3>
+            <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">商品名</label>
+              <input v-model="adminForm.itemName" type="text"
+                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500"
+                placeholder="例: ゲーム1時間">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">コスト (Gold)</label>
+              <input v-model.number="adminForm.itemCost" type="number"
+                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">説明 (任意)</label>
+              <input v-model="adminForm.itemDesc" type="text"
+                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500">
+            </div>
+            <button @click="adminCreateItem"
+              class="w-full py-3 bg-pink-600 text-white font-bold rounded-xl shadow-lg shadow-pink-200 mt-2 active:scale-95 transition-transform">追加</button>
+          </div>
+        </div>
+
+        <!-- Grant Points Mode -->
+        <div v-if="adminViewMode === 'grantPoints'" class="glass-panel p-6 animate-fade-in-up">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-gray-700">ポイント付与</h3>
+            <button @click="adminViewMode = 'menu'" class="text-sm text-gray-400">戻る</button>
+          </div>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">対象ユーザー</label>
+              <select v-model="adminForm.grantTarget"
+                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-yellow-500 bg-white">
+                <option v-for="u in adminUsers" :key="u.user_id" :value="u.user_id">{{ u.user_name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-500 mb-1">付与額</label>
+              <input v-model.number="adminForm.grantAmount" type="number"
+                class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-yellow-500">
+            </div>
+            <button @click="adminGrantPoints"
+              class="w-full py-3 bg-yellow-500 text-white font-bold rounded-xl shadow-lg shadow-yellow-200 mt-2 active:scale-95 transition-transform">付与する</button>
+          </div>
+        </div>
+
       </div>
 
       <div v-else>
