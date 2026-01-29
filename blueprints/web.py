@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, send_from_directory, current_app
 import os
 import datetime
-from services.gsheet import GSheetService
+from services.shop import ShopService
 from services.economy import EconomyService
 from services.history import HistoryService
 from services.status_service import StatusService
@@ -67,6 +67,7 @@ def api_user_status(user_id):
             "total_hours": round(total_hours, 1),
             "rank_name": rank_info.get("name", "Rank E"),
             "avatar_url": user_info.get("avatar_url", ""),
+            "role": user_info.get("role", "USER"),
         }
 
         return jsonify({"status": "ok", "data": response_data})
@@ -80,6 +81,54 @@ def api_user_status(user_id):
 def api_study_subjects():
     """学習可能な科目リストと色定義を返す"""
     return jsonify({"status": "ok", "data": study.SUBJECT_COLORS})
+
+
+@web_bp.route("/api/shop/items")
+def api_shop_items():
+    """ショップの商品リストを返す"""
+    items = ShopService.get_items()
+    # OrderedDict to list
+    items_list = []
+    for key, val in items.items():
+        val["key"] = key
+        items_list.append(val)
+    return jsonify({"status": "ok", "data": items_list})
+
+
+@web_bp.route("/api/shop/buy", methods=["POST"])
+def api_shop_buy():
+    """商品購入リクエスト"""
+    data = request.json
+    user_id = data.get("user_id")
+    item_key = data.get("item_key")
+    comment = data.get("comment", "")
+
+    if not user_id or not item_key:
+        return jsonify({"status": "error", "message": "Missing parameters"}), 400
+
+    items = ShopService.get_items()
+    item = items.get(item_key)
+    if not item:
+        return jsonify({"status": "error", "message": "Item not found"}), 404
+
+    cost = item["cost"]
+
+    # 残高チェック
+    if not EconomyService.check_balance(user_id, cost):
+        return jsonify({"status": "error", "message": "Not enough coins"}), 400
+
+    # ポイント減算
+    EconomyService.add_exp(user_id, -cost, f"BUY_{item_key}")
+
+    # リクエスト作成
+    user_info = EconomyService.get_user_info(user_id)
+    user_name = user_info.get("display_name", "Unknown") if user_info else "Unknown"
+
+    ShopService.create_request(user_id, item_key, cost, comment, user_name)
+
+    # TODO: AdminへのLINE通知などもここで行うと親切
+
+    return jsonify({"status": "ok", "message": "Requested"})
 
 
 @web_bp.route("/api/study/start", methods=["POST"])

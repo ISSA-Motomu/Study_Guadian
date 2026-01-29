@@ -86,7 +86,108 @@
         </div>
       </div>
 
+      <!-- Shop View -->
+      <div v-else-if="view === 'shop'" class="pb-24">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-white text-2xl font-bold drop-shadow-sm">SHOP</h2>
+          <div class="bg-white/90 backdrop-blur rounded-full px-4 py-1 text-sm font-bold text-yellow-600 shadow-sm">
+            💰 {{ user.coins.toLocaleString() }} pt
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div v-for="item in shopItems" :key="item.key" @click="openBuyModal(item)"
+            class="bg-white rounded-2xl p-4 shadow-sm active:scale-95 transition-transform flex flex-col justify-between h-40 relative overflow-hidden">
+            <div
+              class="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-bl-xl shadow-sm">
+              {{ item.cost }} pt
+            </div>
+            <div class="text-4xl text-center mt-4">✨</div>
+            <div>
+              <div class="font-bold text-gray-800 text-sm leading-tight mb-1">{{ item.name }}</div>
+              <div class="text-[10px] text-gray-400 leading-tight line-clamp-2 h-8">{{ item.description }}</div>
+            </div>
+            <button class="mt-2 w-full py-1 bg-indigo-50 text-indigo-600 text-xs font-bold rounded-lg">
+              交換する
+            </button>
+          </div>
+        </div>
+
+        <button @click="view = 'dashboard'"
+          class="mt-8 w-full py-3 bg-white/20 text-white font-bold rounded-full backdrop-blur-sm">
+          戻る
+        </button>
+
+        <!-- Buy Modal -->
+        <div v-if="showBuyModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showBuyModal = false"></div>
+          <div class="bg-white rounded-3xl p-6 w-full max-w-sm relative z-10 shadow-2xl">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ selectedItem?.name }}</h3>
+            <div class="text-yellow-600 font-bold mb-4">価格: {{ selectedItem?.cost }} pt</div>
+
+            <div class="mb-4">
+              <label class="block text-xs text-gray-400 mb-1">使い道・理由（親へのメッセージ）</label>
+              <textarea v-model="buyComment"
+                class="w-full bg-gray-50 rounded-xl p-3 text-sm border border-gray-200 focus:outline-none focus:border-indigo-400"
+                rows="3" placeholder="例: 今週末マリオやる！"></textarea>
+            </div>
+
+            <div class="flex gap-3">
+              <button @click="confirmBuy"
+                class="flex-1 bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform">
+                購入する
+              </button>
+              <button @click="showBuyModal = false" class="flex-1 bg-gray-100 text-gray-500 font-bold py-3 rounded-xl">
+                やめる
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin View -->
+      <div v-else-if="view === 'admin'" class="pb-24">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-white text-2xl font-bold drop-shadow-sm">ADMIN</h2>
+          <button @click="view = 'dashboard'"
+            class="bg-white/20 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm">
+            Exit
+          </button>
+        </div>
+
+        <div class="glass-panel p-6 mb-6">
+          <h3 class="font-bold text-gray-700 mb-4">管理メニュー</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <button
+              class="bg-indigo-50 p-4 rounded-xl text-indigo-700 font-bold text-sm flex flex-col items-center gap-2"
+              @click="alert('LINEの「タスク追加」コマンドを使ってください')">
+              <span>📋</span>タスク追加
+            </button>
+            <button class="bg-pink-50 p-4 rounded-xl text-pink-700 font-bold text-sm flex flex-col items-center gap-2"
+              @click="alert('Googleフォームまたは「商品追加」コマンドを使ってください')">
+              <span>🛒</span>商品追加
+            </button>
+            <button
+              class="bg-yellow-50 p-4 rounded-xl text-yellow-700 font-bold text-sm flex flex-col items-center gap-2"
+              @click="alert('LINEの「ポイント付与」コマンドを使ってください')">
+              <span>💰</span>ポイント付与
+            </button>
+            <button class="bg-green-50 p-4 rounded-xl text-green-700 font-bold text-sm flex flex-col items-center gap-2"
+              @click="alert('LINEの「ステータス」コマンドをで履歴を確認できます')">
+              <span>📊</span>履歴確認
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-4 text-center">※現在、承認機能はLINEのチャット画面で行ってください。</p>
+        </div>
+      </div>
+
       <div v-else>
+        <!-- Admin Toggle (Visible only to ADMIN) -->
+        <button v-if="user.role === 'ADMIN'" @click="view = 'admin'"
+          class="absolute top-4 right-4 bg-black/30 text-white text-xs px-3 py-1 rounded-full backdrop-blur-sm z-20">
+          🔧 Admin Mode
+        </button>
+
         <!-- Avatar & Rank Section -->
         <div class="text-center mb-6">
           <div class="relative inline-block">
@@ -293,7 +394,11 @@
           timerDisplay: '00:00:00',
           studyMemo: '',
           showMemoConfirm: false,
-          memoToSend: ''
+          memoToSend: '',
+          shopItems: [],
+          selectedItem: null,
+          showBuyModal: false,
+          buyComment: ''
         }
       },
       computed: {
@@ -382,9 +487,59 @@
             };
           }
         },
-        openShop() {
+        async openShop() {
           playSound('click');
-          alert("ショップ機能は準備中です！");
+          this.loading = true;
+          try {
+            const res = await fetch('/api/shop/items');
+            const json = await res.json();
+            if (json.status === 'ok') {
+              this.shopItems = json.data;
+              this.view = 'shop';
+            } else {
+              alert("ショップ情報の取得に失敗しました");
+            }
+          } catch (e) {
+            console.error(e);
+            alert("通信エラー");
+          } finally {
+            this.loading = false;
+          }
+        },
+        openBuyModal(item) {
+          this.selectedItem = item;
+          this.buyComment = '';
+          this.showBuyModal = true;
+        },
+        async confirmBuy() {
+          if (!this.selectedItem) return;
+
+          if (this.user.coins < this.selectedItem.cost) {
+            alert("ポイントが足りません！");
+            return;
+          }
+
+          playSound('select3');
+          try {
+            const res = await fetch('/api/shop/buy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: this.currentUserId,
+                item_key: this.selectedItem.key,
+                comment: this.buyComment
+              })
+            });
+            const json = await res.json();
+            if (json.status === 'ok') {
+              alert("購入リクエストを送りました！\n親の承認をお待ちください。");
+              this.showBuyModal = false;
+              // ポイント表示更新のため再取得
+              await this.fetchUserData(this.currentUserId);
+            } else {
+              alert("購入エラー: " + json.message);
+            }
+          } catch (e) { alert("通信エラー"); }
         },
         async openModal() {
           playSound('click');
@@ -496,7 +651,10 @@
             const json = await res.json();
             if (json.status === 'ok') {
               alert("記録を取り消しました。");
-              liff.closeWindow();
+              this.studying = false;
+              this.showStudyModal = false;
+              clearInterval(this.timerInterval);
+              this.view = 'dashboard';
             } else {
               alert("取消に失敗しました");
             }
