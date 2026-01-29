@@ -257,7 +257,7 @@ createApp({
           this.currentSubject = subject;
           this.currentSubjectColor = this.subjects[subject];
           this.startTime = new Date();
-          // this.view = 'timer'; // タイマー画面はStudyビュー内のオーバーレイとして扱う
+          this.view = 'timer';
           this.startTimerTick();
         } else {
           alert("開始失敗: " + json.message);
@@ -385,7 +385,7 @@ createApp({
           if (startDate > now) startDate.setDate(startDate.getDate() - 1);
 
           this.startTime = startDate;
-          this.view = 'study'; // 元のビューに関わらずStudyを表示
+          this.view = 'timer'; // タイマー画面へ復帰
           this.startTimerTick();
         }
       } catch (e) { console.error(e); }
