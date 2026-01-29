@@ -117,16 +117,28 @@ def api_user_status(user_id):
 
         study_stats = HistoryService.get_user_study_stats(user_id)
 
-        total_hours = study_stats.get("total", 0)
-        total_minutes_val = total_hours * 60
-        rank_info = StatusService.get_rank_info(total_minutes_val)
+        total_minutes = study_stats.get("total", 0)
+        total_hours = total_minutes / 60
+
+        # ランク判定には分を使用
+        rank_info = StatusService.get_rank_info(total_minutes)
+
+        # レベル計算 (例: 1時間でレベルアップ)
+        level = int(total_hours) + 1
+
+        # 次のレベルまでの経験値 (次の時間までの残り分数など)
+        # ここでは簡易的に 1時間 = 100 EXP として表現
+        exp = int((total_minutes % 60) / 60 * 100)
+        next_exp = 100
 
         response_data = {
             "name": user_info.get("display_name", "Unknown"),
-            "level": int(user_info.get("level", 1)),
-            "exp": int(user_info.get("exp", 0)),
-            "next_exp": int(user_info.get("level", 1)) * 100 + 500,
-            "coins": int(user_info.get("coins", 0)),
+            "level": level,
+            "exp": exp,
+            "next_exp": next_exp,
+            "pt": int(
+                user_info.get("current_exp", 0)
+            ),  # シート側のカラム名は current_exp
             "total_hours": round(total_hours, 1),
             "rank_name": rank_info.get("name", "Rank E"),
             "avatar_url": user_info.get("avatar_url", ""),
@@ -319,3 +331,62 @@ def api_pause_study():
     if result:
         return jsonify({"status": "ok"})
     return jsonify({"status": "error"}), 400
+
+
+# --- ADMIN API ---
+@web_bp.route("/api/admin/users")
+def api_admin_users():
+    users = EconomyService.get_all_users()
+    # フロントエンドで使いやすい形式に整形
+    user_list = []
+    for u in users:
+        user_list.append(
+            {"user_id": u.get("user_id"), "user_name": u.get("display_name", "Unknown")}
+        )
+    return jsonify({"status": "success", "users": user_list})
+
+
+@web_bp.route("/api/admin/add_task", methods=["POST"])
+def api_admin_add_task():
+    data = request.json
+    title = data.get("title")
+    reward = data.get("reward")
+    if not title:
+        return jsonify({"status": "error", "message": "Title required"}), 400
+
+    success, msg = JobService.add_job(title, reward)
+    if success:
+        return jsonify({"status": "success", "job_id": msg})
+    else:
+        return jsonify({"status": "error", "message": msg}), 500
+
+
+@web_bp.route("/api/admin/add_item", methods=["POST"])
+def api_admin_add_item():
+    data = request.json
+    name = data.get("name")
+    cost = data.get("cost")
+    desc = data.get("description", "")
+
+    if not name:
+        return jsonify({"status": "error", "message": "Name required"}), 400
+
+    if ShopService.add_item(name, cost, desc):
+        return jsonify({"status": "success"})
+    else:
+        return jsonify({"status": "error", "message": "Failed to add item"}), 500
+
+
+@web_bp.route("/api/admin/grant_points", methods=["POST"])
+def api_admin_grant_points():
+    data = request.json
+    user_id = data.get("user_id")
+    amount = data.get("amount")
+
+    if not user_id or amount is None:
+        return jsonify({"status": "error", "message": "Missing params"}), 400
+
+    if EconomyService.add_exp(user_id, int(amount), "ADMIN_GRANT"):
+        return jsonify({"status": "success"})
+    else:
+        return jsonify({"status": "error", "message": "Failed to grant"}), 500

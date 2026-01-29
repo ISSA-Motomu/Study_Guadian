@@ -26,7 +26,7 @@ createApp({
         level: 1,
         exp: 0,
         next_exp: 100,
-        coins: 0,
+        pt: 0,
         total_hours: 0,
         rank_name: "Beginner",
         avatar_url: ""
@@ -149,7 +149,7 @@ createApp({
           level: 12,
           exp: 1450,
           next_exp: 2000,
-          coins: 3500,
+          pt: 3500,
           total_hours: 42.5,
           rank_name: "Rank C: 熟練者",
           avatar_url: "https://cdn-icons-png.flaticon.com/512/4333/4333609.png"
@@ -471,6 +471,9 @@ createApp({
             alert('エラー: ' + data.message);
           }
         });
+    },
+    showAlert(msg) {
+      alert(msg);
     }
   }
 }).mount('#app')

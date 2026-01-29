@@ -117,7 +117,7 @@
             <h2 class="text-white text-2xl font-bold drop-shadow-sm">SHOP</h2>
           </div>
           <div class="bg-white/90 backdrop-blur rounded-full px-4 py-1 text-sm font-bold text-yellow-600 shadow-sm">
-            💰 {{ user.coins.toLocaleString() }} pt
+            💰 {{ user.pt.toLocaleString() }} pt
           </div>
         </div>
 
@@ -202,7 +202,7 @@
             </button>
             <button
               class="bg-green-50 p-4 rounded-xl text-green-700 font-bold text-sm flex flex-col items-center gap-2 active:bg-green-100 transition-colors"
-              @click="alert('履歴確認機能はまだ実装されていません')">
+              @click="showAlert('履歴確認機能はまだ実装されていません')">
               <span>📊</span>履歴確認
             </button>
           </div>
@@ -223,7 +223,7 @@
                 placeholder="例: お風呂掃除">
             </div>
             <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">報酬 (Gold)</label>
+              <label class="block text-xs font-bold text-gray-500 mb-1">報酬 (Pt)</label>
               <input v-model.number="adminForm.taskReward" type="number"
                 class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-indigo-500">
             </div>
@@ -246,7 +246,7 @@
                 placeholder="例: ゲーム1時間">
             </div>
             <div>
-              <label class="block text-xs font-bold text-gray-500 mb-1">コスト (Gold)</label>
+              <label class="block text-xs font-bold text-gray-500 mb-1">コスト (Pt)</label>
               <input v-model.number="adminForm.itemCost" type="number"
                 class="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:border-pink-500">
             </div>

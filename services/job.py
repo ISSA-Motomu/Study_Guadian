@@ -393,3 +393,38 @@ class JobService:
             return True, title
         except Exception as e:
             return False, str(e)
+
+    @staticmethod
+    def add_job(title, reward, client_id="ADMIN"):
+        """新規ジョブ作成"""
+        sheet = GSheetService.get_worksheet("jobs")
+        if not sheet:
+            return False, "Sheet not found"
+
+        try:
+            headers = sheet.row_values(1)
+            col_map = {str(h).strip(): i for i, h in enumerate(headers)}
+
+            row_data = [""] * len(headers)
+
+            job_id = f"job_{int(datetime.datetime.now().timestamp())}"
+
+            def set_val(key, val):
+                idx = col_map.get(key)
+                if idx is not None:
+                    row_data[idx] = val
+
+            set_val("job_id", job_id)
+            set_val("title", title)
+            set_val("reward", reward)
+            set_val("status", "OPEN")
+            set_val("client_id", client_id)
+            set_val("worker_id", "")
+            set_val("created_at", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+            sheet.append_row(row_data)
+            # キャッシュクリア
+            job_list_cache.clear()
+            return True, job_id
+        except Exception as e:
+            return False, str(e)
